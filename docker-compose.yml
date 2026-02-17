@@ -1,0 +1,16 @@
+services:
+  unraid-mcp:
+    build: .
+    container_name: unraid-mcp
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/libvirt/libvirt-sock:/var/run/libvirt/libvirt-sock
+      - /var/local/emhttp:/host/emhttp:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - ./config:/config
+    environment:
+      - UNRAID_MCP_AUTH_TOKEN=${UNRAID_MCP_AUTH_TOKEN}
+    restart: unless-stopped

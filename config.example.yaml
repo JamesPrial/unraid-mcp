@@ -1,0 +1,24 @@
+server:
+  port: 8080
+  auth_token: ""  # auto-generated if empty on first run
+
+safety:
+  docker:
+    allowlist: []       # empty = all allowed
+    denylist:
+      - "unraid-mcp"   # prevent self-management
+  vms:
+    allowlist: []
+    denylist: []
+
+paths:
+  emhttp: "/host/emhttp"
+  proc: "/host/proc"
+  sys: "/host/sys"
+  docker_socket: "/var/run/docker.sock"
+  libvirt_socket: "/var/run/libvirt/libvirt-sock"
+
+audit:
+  enabled: true
+  log_path: "/config/audit.log"
+  max_size_mb: 50

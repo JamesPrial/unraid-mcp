@@ -1,0 +1,15 @@
+# Binaries
+/unraid-mcp
+*.exe
+
+# Config with secrets
+config.yaml
+audit.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store

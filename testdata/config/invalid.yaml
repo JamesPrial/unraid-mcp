@@ -1,0 +1,4 @@
+server:
+  port: [this is not valid yaml
+  auth_token: {{broken}}
+  :::malformed

@@ -1,0 +1,28 @@
+server:
+  port: 9090
+  auth_token: "test-secret-token"
+
+safety:
+  docker:
+    allowlist:
+      - "plex"
+      - "sonarr"
+    denylist:
+      - "unraid-mcp"
+  vms:
+    allowlist:
+      - "windows-vm"
+    denylist:
+      - "macos-vm"
+
+paths:
+  emhttp: "/custom/emhttp"
+  proc: "/custom/proc"
+  sys: "/custom/sys"
+  docker_socket: "/custom/docker.sock"
+  libvirt_socket: "/custom/libvirt-sock"
+
+audit:
+  enabled: true
+  log_path: "/custom/audit.log"
+  max_size_mb: 100
