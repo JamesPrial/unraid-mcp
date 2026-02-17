@@ -87,8 +87,8 @@ type NetworkCreateConfig struct {
 	Subnet string
 }
 
-// DockerManager defines the operations available for managing Docker containers and networks.
-type DockerManager interface {
+// ContainerManager defines operations for managing Docker containers.
+type ContainerManager interface {
 	ListContainers(ctx context.Context, all bool) ([]Container, error)
 	InspectContainer(ctx context.Context, id string) (*ContainerDetail, error)
 	StartContainer(ctx context.Context, id string) error
@@ -99,10 +99,21 @@ type DockerManager interface {
 	PullImage(ctx context.Context, image string) error
 	GetLogs(ctx context.Context, id string, tail int) (string, error)
 	GetStats(ctx context.Context, id string) (*ContainerStats, error)
+}
+
+// NetworkManager defines operations for managing Docker networks.
+type NetworkManager interface {
 	ListNetworks(ctx context.Context) ([]Network, error)
 	InspectNetwork(ctx context.Context, id string) (*NetworkDetail, error)
 	CreateNetwork(ctx context.Context, config NetworkCreateConfig) (string, error)
 	RemoveNetwork(ctx context.Context, id string) error
 	ConnectNetwork(ctx context.Context, networkID, containerID string) error
 	DisconnectNetwork(ctx context.Context, networkID, containerID string) error
+}
+
+// DockerManager combines ContainerManager and NetworkManager.
+// Existing code that depends on DockerManager continues to compile without changes.
+type DockerManager interface {
+	ContainerManager
+	NetworkManager
 }

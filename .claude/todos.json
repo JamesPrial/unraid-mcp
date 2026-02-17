@@ -1,0 +1,780 @@
+[
+  {
+    "timestamp": "2026-02-17T12:09:39.147Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Initialize Go project and dependencies",
+      "description": "git init, go mod init, install dependencies (mcp-go, docker SDK, go-libvirt, ini.v1, yaml.v3), create directory structure",
+      "status": "pending",
+      "activeForm": "Initializing project"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:09:43.311Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Stage 1 TDD: Foundation (config, auth, safety)",
+      "description": "TDD RED-GREEN cycle for config loading, auth middleware, safety layer (confirm, filter, audit). Pure logic, no external deps.",
+      "status": "pending",
+      "activeForm": "Building foundation layer (TDD)"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:09:46.796Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Stage 2 TDD: System Health Monitor",
+      "description": "TDD RED-GREEN cycle for system health reading from /proc, /sys, /var/local/emhttp. Uses test fixture files.",
+      "status": "pending",
+      "activeForm": "Building system health monitor (TDD)"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:09:50.075Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Stage 3 TDD: Docker Manager",
+      "description": "TDD RED-GREEN cycle for Docker manager interface + implementation + MCP tool handlers (16 tools). Mock-based testing.",
+      "status": "pending",
+      "activeForm": "Building Docker manager (TDD)"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:09:53.121Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Stage 4 TDD: VM Manager",
+      "description": "TDD RED-GREEN cycle for VM manager interface + implementation + MCP tool handlers (12 tools). Mock-based testing via go-libvirt.",
+      "status": "pending",
+      "activeForm": "Building VM manager (TDD)"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:09:56.712Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Stage 5: MCP Server Wiring + Dockerfile + docker-compose",
+      "description": "Wire all tools into mcp-go server, add auth middleware, create Dockerfile (multi-stage), docker-compose.yml, config.example.yaml, cmd/server/main.go",
+      "status": "pending",
+      "activeForm": "Wiring MCP server and Docker setup"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:00.105Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Final review and verification",
+      "description": "Full test suite, code review, build verification, final audit",
+      "status": "pending",
+      "activeForm": "Running final verification"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:03.269Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "2",
+      "subject": "",
+      "status": "",
+      "blockedBy": [
+        "1"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:06.321Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "3",
+      "subject": "",
+      "status": "",
+      "blockedBy": [
+        "2"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:09.330Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "4",
+      "subject": "",
+      "status": "",
+      "blockedBy": [
+        "2"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:11.965Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "5",
+      "subject": "",
+      "status": "",
+      "blockedBy": [
+        "2"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:15.089Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "6",
+      "subject": "",
+      "status": "",
+      "blockedBy": [
+        "3",
+        "4",
+        "5"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:18.236Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "7",
+      "subject": "",
+      "status": "",
+      "blockedBy": [
+        "6"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:10:21.079Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "1",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:12:18.771Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "1",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:12:21.779Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "2",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:21:59.906Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "2",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:22:03.913Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "3",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:22:04.297Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "4",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:22:04.635Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "5",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:33:34.944Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "3",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:33:35.323Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "4",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:33:35.623Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "5",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:33:36.096Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "6",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:48:40.007Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "6",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:48:40.376Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "7",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T12:53:29.409Z",
+    "session_id": "4e7688e7-afc1-4b8e-8105-86de80bc5b7e",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "7",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:41:51.476Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Stage 1: Extract shared tool helpers to internal/tools/helpers.go",
+      "description": "Create internal/tools/helpers.go with JSONResult, ErrorResult, LogAudit, ConfirmPrompt. Remove duplicates from docker/tools.go, vm/tools.go, system/tools.go.",
+      "status": "pending",
+      "activeForm": "Extracting shared tool helpers"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:42:17.614Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Wave 1: Launch explorer + architect + researcher agents",
+      "description": "Launch all three Wave 1 agents in parallel to explore codebase, design architecture, and research best practices.",
+      "status": "pending",
+      "activeForm": "Launching Wave 1 exploration agents"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:42:20.757Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "1",
+      "subject": "",
+      "status": "deleted"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:42:24.290Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Wave 1: Synthesize findings, identify stages, assess complexity",
+      "description": "Read all Wave 1 output files, combine into implementation brief, identify stages and complexity.",
+      "status": "pending",
+      "activeForm": "Synthesizing Wave 1 findings"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:42:28.259Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Wave 2-TDD: Execute all stages (RED-GREEN-VERIFY cycles)",
+      "description": "Execute TDD cycles for each implementation stage. Will be broken into sub-tasks after Wave 1.",
+      "status": "pending",
+      "activeForm": "Executing TDD implementation stages"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:42:31.674Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Wave 3: Final review (test-runner + reviewer + optimizer)",
+      "description": "Launch parallel final review agents after all stages complete.",
+      "status": "pending",
+      "activeForm": "Running final review"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:42:34.847Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "Wave 4: Verification and final summary",
+      "description": "Run final build/test/vet verification and present summary to user.",
+      "status": "pending",
+      "activeForm": "Running final verification"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:42:37.605Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "2",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:47:57.056Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "2",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:47:57.362Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "3",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:21.652Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "3",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:22.042Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "4",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:26.012Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 1 RED: Write tests for tools helpers",
+      "description": "Write tests for JSONResult, ErrorResult, LogAudit, ConfirmPrompt in internal/tools/helpers_test.go",
+      "status": "pending",
+      "activeForm": "Writing RED tests for helpers"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:27.357Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 1 GREEN: Implement helpers + remove duplicates",
+      "description": "Create internal/tools/helpers.go, update all call sites in docker/vm/system tools.go",
+      "status": "pending",
+      "activeForm": "Implementing helpers and removing duplicates"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:28.949Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 2 RED: Write tests for DestructiveTools + sentinel error",
+      "description": "Write tests for docker.DestructiveTools, vm.DestructiveTools, vm.ErrLibvirtNotCompiled",
+      "status": "pending",
+      "activeForm": "Writing RED tests for Stage 2"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:30.304Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 2 GREEN: Implement structural changes",
+      "description": "Add DestructiveTools vars, split docker/tools.go, unify checkError, extract sentinel error",
+      "status": "pending",
+      "activeForm": "Implementing Stage 2 structural changes"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:31.010Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 3 RED: Write tests for config helpers",
+      "description": "Write tests for ApplyEnvOverrides, EnsureAuthToken, GenerateRandomToken",
+      "status": "pending",
+      "activeForm": "Writing RED tests for config helpers"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:32.080Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 3 GREEN: Implement config helpers",
+      "description": "Add functions to internal/config/config.go, update main.go",
+      "status": "pending",
+      "activeForm": "Implementing config helpers"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:32.920Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 4 RED: Write tests for interface segregation",
+      "description": "Write compile-time checks and reflection tests for ContainerManager + NetworkManager",
+      "status": "pending",
+      "activeForm": "Writing RED tests for interfaces"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:33.778Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskCreate",
+    "task": {
+      "subject": "TDD Stage 4 GREEN: Implement interface split",
+      "description": "Split DockerManager into ContainerManager + NetworkManager with embedding",
+      "status": "pending",
+      "activeForm": "Implementing interface segregation"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:50:39.135Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "7",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:54:13.763Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "7",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:54:14.166Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "8",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:58:52.989Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "8",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T13:58:53.307Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "9",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:01:35.938Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "9",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:01:36.071Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "11",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:01:36.273Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "10",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:01:36.575Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "12",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:01:36.807Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "13",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:05:43.114Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "12",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:05:43.448Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "13",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:06:56.952Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "10",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:06:57.472Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "14",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:08:11.639Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "14",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:08:11.847Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "4",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:08:12.273Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "5",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:11:28.513Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "5",
+      "subject": "",
+      "status": "completed"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:11:28.943Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "6",
+      "subject": "",
+      "status": "in_progress"
+    }
+  },
+  {
+    "timestamp": "2026-02-17T14:11:53.850Z",
+    "session_id": "8e1889a0-3a8e-47be-a742-f53d4f0e31d7",
+    "cwd": "/Users/jamesprial/code/unraid-mcp",
+    "tool_name": "TaskUpdate",
+    "task": {
+      "id": "6",
+      "subject": "",
+      "status": "completed"
+    }
+  }
+]

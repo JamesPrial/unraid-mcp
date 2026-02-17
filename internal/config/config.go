@@ -2,6 +2,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -86,4 +88,37 @@ func DefaultConfig() *Config {
 			LogPath: "/config/audit.log",
 		},
 	}
+}
+
+// ApplyEnvOverrides updates cfg in place with values from environment variables.
+// Currently recognized: UNRAID_MCP_AUTH_TOKEN overrides cfg.Server.AuthToken.
+func ApplyEnvOverrides(cfg *Config) {
+	if token := os.Getenv("UNRAID_MCP_AUTH_TOKEN"); token != "" {
+		cfg.Server.AuthToken = token
+	}
+}
+
+// EnsureAuthToken generates a random auth token and sets it on cfg if
+// cfg.Server.AuthToken is empty. It returns the token (existing or generated)
+// and any error encountered during generation.
+func EnsureAuthToken(cfg *Config) (string, error) {
+	if cfg.Server.AuthToken != "" {
+		return cfg.Server.AuthToken, nil
+	}
+	token, err := GenerateRandomToken()
+	if err != nil {
+		return "", fmt.Errorf("generate auth token: %w", err)
+	}
+	cfg.Server.AuthToken = token
+	return token, nil
+}
+
+// GenerateRandomToken returns a 32-character hex-encoded cryptographically
+// random token string.
+func GenerateRandomToken() (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("rand.Read: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }

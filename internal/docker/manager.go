@@ -85,17 +85,15 @@ func readBody(resp *http.Response) ([]byte, error) {
 	return data, nil
 }
 
-// checkError checks the HTTP status code and extracts the Docker error message
-// from the response body if the status indicates failure.
-func checkError(resp *http.Response, notFoundMsg string) error {
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+// checkAPIError checks the status code and body without requiring a response
+// with an open body (useful when we have already read the body).
+func checkAPIError(statusCode int, body []byte, notFoundMsg string) error {
+	if statusCode >= 200 && statusCode < 300 {
 		return nil
 	}
-	body, _ := readBody(resp)
-	if resp.StatusCode == http.StatusNotFound {
+	if statusCode == http.StatusNotFound {
 		return fmt.Errorf("%s", notFoundMsg)
 	}
-	// Try to extract the Docker error message JSON: {"message": "..."}
 	var apiErr struct {
 		Message string `json:"message"`
 	}
@@ -104,7 +102,7 @@ func checkError(resp *http.Response, notFoundMsg string) error {
 			return fmt.Errorf("docker: %s", apiErr.Message)
 		}
 	}
-	return fmt.Errorf("docker: unexpected status %d: %s", resp.StatusCode, string(body))
+	return fmt.Errorf("docker: unexpected status %d: %s", statusCode, string(body))
 }
 
 // ---------------------------------------------------------------------------
@@ -132,14 +130,16 @@ func (m *DockerClientManager) ListContainers(ctx context.Context, all bool) ([]C
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if err := checkError(resp, "container not found"); err != nil {
+	body, err := readBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("docker: list containers: %w", err)
+	}
+	if err := checkAPIError(resp.StatusCode, body, "container not found"); err != nil {
 		return nil, fmt.Errorf("docker: list containers: %w", err)
 	}
 
 	var raw []dockerContainer
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("docker: decode container list: %w", err)
 	}
 
@@ -201,17 +201,16 @@ func (m *DockerClientManager) InspectContainer(ctx context.Context, id string) (
 	if err != nil {
 		return nil, fmt.Errorf("docker: inspect container: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("container not found: %s", id)
+	body, err := readBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("docker: inspect container: %w", err)
 	}
-	if err := checkError(resp, fmt.Sprintf("container not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
 		return nil, fmt.Errorf("docker: inspect container: %w", err)
 	}
 
 	var raw dockerContainerInspect
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("docker: decode container inspect: %w", err)
 	}
 
@@ -275,7 +274,7 @@ func (m *DockerClientManager) StartContainer(ctx context.Context, id string) err
 	if resp.StatusCode == http.StatusNotModified || (resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		return nil
 	}
-	if err := checkErrorFromBody(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
 		return fmt.Errorf("docker: start container: %w", err)
 	}
 	return nil
@@ -300,7 +299,7 @@ func (m *DockerClientManager) StopContainer(ctx context.Context, id string, time
 	if resp.StatusCode == http.StatusNotModified || (resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		return nil
 	}
-	if err := checkErrorFromBody(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
 		return fmt.Errorf("docker: stop container: %w", err)
 	}
 	return nil
@@ -323,7 +322,7 @@ func (m *DockerClientManager) RestartContainer(ctx context.Context, id string, t
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	if err := checkErrorFromBody(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
 		return fmt.Errorf("docker: restart container: %w", err)
 	}
 	return nil
@@ -351,7 +350,7 @@ func (m *DockerClientManager) RemoveContainer(ctx context.Context, id string, fo
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	if err := checkErrorFromBody(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
 		return fmt.Errorf("docker: remove container: %w", err)
 	}
 	return nil
@@ -426,7 +425,7 @@ func (m *DockerClientManager) CreateContainer(ctx context.Context, config Contai
 		return "", err
 	}
 
-	if err := checkErrorFromBody(resp.StatusCode, body, "container not found"); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, "container not found"); err != nil {
 		return "", fmt.Errorf("docker: create container: %w", err)
 	}
 
@@ -440,26 +439,6 @@ func (m *DockerClientManager) CreateContainer(ctx context.Context, config Contai
 		return "", fmt.Errorf("docker: create container returned empty ID")
 	}
 	return result.ID, nil
-}
-
-// checkErrorFromBody checks the status code and body without requiring a response
-// with an open body (useful when we have already read the body).
-func checkErrorFromBody(statusCode int, body []byte, notFoundMsg string) error {
-	if statusCode >= 200 && statusCode < 300 {
-		return nil
-	}
-	if statusCode == http.StatusNotFound {
-		return fmt.Errorf("%s", notFoundMsg)
-	}
-	var apiErr struct {
-		Message string `json:"message"`
-	}
-	if len(body) > 0 {
-		if jsonErr := json.Unmarshal(body, &apiErr); jsonErr == nil && apiErr.Message != "" {
-			return fmt.Errorf("docker: %s", apiErr.Message)
-		}
-	}
-	return fmt.Errorf("docker: unexpected status %d: %s", statusCode, string(body))
 }
 
 // PullImage pulls the specified image from a registry.
@@ -497,14 +476,18 @@ func (m *DockerClientManager) GetLogs(ctx context.Context, id string, tail int) 
 	if err != nil {
 		return "", fmt.Errorf("docker: get logs: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
+		resp.Body.Close()
 		return "", fmt.Errorf("container not found: %s", id)
 	}
-	if err := checkError(resp, fmt.Sprintf("container not found: %s", id)); err != nil {
-		return "", fmt.Errorf("docker: get logs: %w", err)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := readBody(resp)
+		if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
+			return "", fmt.Errorf("docker: get logs: %w", err)
+		}
 	}
+	defer resp.Body.Close()
 
 	// Docker multiplexes stdout/stderr using an 8-byte header per frame.
 	// We demultiplex manually: header[0] is stream type, header[4:8] is size.
@@ -566,17 +549,16 @@ func (m *DockerClientManager) GetStats(ctx context.Context, id string) (*Contain
 	if err != nil {
 		return nil, fmt.Errorf("docker: get stats: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("container not found: %s", id)
+	body, err := readBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("docker: get stats: %w", err)
 	}
-	if err := checkError(resp, fmt.Sprintf("container not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("container not found: %s", id)); err != nil {
 		return nil, fmt.Errorf("docker: get stats: %w", err)
 	}
 
 	var raw dockerStatsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("docker: decode stats: %w", err)
 	}
 
@@ -631,14 +613,16 @@ func (m *DockerClientManager) ListNetworks(ctx context.Context) ([]Network, erro
 	if err != nil {
 		return nil, fmt.Errorf("docker: list networks: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if err := checkError(resp, "network not found"); err != nil {
+	body, err := readBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("docker: list networks: %w", err)
+	}
+	if err := checkAPIError(resp.StatusCode, body, "network not found"); err != nil {
 		return nil, fmt.Errorf("docker: list networks: %w", err)
 	}
 
 	var raw []dockerNetwork
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("docker: decode network list: %w", err)
 	}
 
@@ -680,17 +664,16 @@ func (m *DockerClientManager) InspectNetwork(ctx context.Context, id string) (*N
 	if err != nil {
 		return nil, fmt.Errorf("docker: inspect network: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("network not found: %s", id)
+	body, err := readBody(resp)
+	if err != nil {
+		return nil, fmt.Errorf("docker: inspect network: %w", err)
 	}
-	if err := checkError(resp, fmt.Sprintf("network not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("network not found: %s", id)); err != nil {
 		return nil, fmt.Errorf("docker: inspect network: %w", err)
 	}
 
 	var raw dockerNetworkInspect
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("docker: decode network inspect: %w", err)
 	}
 
@@ -769,7 +752,7 @@ func (m *DockerClientManager) CreateNetwork(ctx context.Context, config NetworkC
 		return "", err
 	}
 
-	if err := checkErrorFromBody(resp.StatusCode, body, "network not found"); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, "network not found"); err != nil {
 		return "", fmt.Errorf("docker: create network: %w", err)
 	}
 
@@ -801,7 +784,7 @@ func (m *DockerClientManager) RemoveNetwork(ctx context.Context, id string) erro
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	if err := checkErrorFromBody(resp.StatusCode, body, fmt.Sprintf("network not found: %s", id)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("network not found: %s", id)); err != nil {
 		return fmt.Errorf("docker: remove network: %w", err)
 	}
 	return nil
@@ -834,7 +817,7 @@ func (m *DockerClientManager) ConnectNetwork(ctx context.Context, networkID, con
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	if err := checkErrorFromBody(resp.StatusCode, body, fmt.Sprintf("network not found: %s", networkID)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("network not found: %s", networkID)); err != nil {
 		return fmt.Errorf("docker: connect network: %w", err)
 	}
 	return nil
@@ -868,7 +851,7 @@ func (m *DockerClientManager) DisconnectNetwork(ctx context.Context, networkID, 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	if err := checkErrorFromBody(resp.StatusCode, body, fmt.Sprintf("network not found: %s", networkID)); err != nil {
+	if err := checkAPIError(resp.StatusCode, body, fmt.Sprintf("network not found: %s", networkID)); err != nil {
 		return fmt.Errorf("docker: disconnect network: %w", err)
 	}
 	return nil

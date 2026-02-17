@@ -3,8 +3,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
@@ -27,8 +25,15 @@ const defaultConfigPath = "/config/config.yaml"
 
 func main() {
 	cfg := loadConfig()
-	applyEnvOverrides(cfg)
-	ensureAuthToken(cfg)
+	config.ApplyEnvOverrides(cfg)
+
+	tokenBefore := cfg.Server.AuthToken
+	token, err := config.EnsureAuthToken(cfg)
+	if err != nil {
+		log.Printf("warning: could not generate auth token: %v — running without authentication", err)
+	} else if tokenBefore == "" {
+		log.Printf("generated auth token (set UNRAID_MCP_AUTH_TOKEN to persist): %s", token)
+	}
 
 	// Open audit log writer if enabled.
 	var auditLogger *safety.AuditLogger
@@ -52,23 +57,8 @@ func main() {
 		cfg.Safety.VMs.Denylist,
 	)
 
-	destructiveDockerTools := []string{
-		"docker_stop",
-		"docker_restart",
-		"docker_remove",
-		"docker_create",
-		"docker_network_remove",
-	}
-	destructiveVMTools := []string{
-		"vm_stop",
-		"vm_force_stop",
-		"vm_restart",
-		"vm_create",
-		"vm_delete",
-	}
-
-	dockerConfirm := safety.NewConfirmationTracker(destructiveDockerTools)
-	vmConfirm := safety.NewConfirmationTracker(destructiveVMTools)
+	dockerConfirm := safety.NewConfirmationTracker(docker.DestructiveTools)
+	vmConfirm := safety.NewConfirmationTracker(vm.DestructiveTools)
 
 	// Build resource managers.
 	dockerMgr, err := docker.NewDockerClientManager(cfg.Paths.DockerSocket)
@@ -165,37 +155,4 @@ func loadConfig() *config.Config {
 	return cfg
 }
 
-// applyEnvOverrides overrides config values with environment variables when set.
-func applyEnvOverrides(cfg *config.Config) {
-	if token := os.Getenv("UNRAID_MCP_AUTH_TOKEN"); token != "" {
-		cfg.Server.AuthToken = token
-	}
-}
-
-// ensureAuthToken generates a random auth token if none is configured,
-// logging it so the operator can use it.
-func ensureAuthToken(cfg *config.Config) {
-	if cfg.Server.AuthToken != "" {
-		return
-	}
-
-	token, err := generateRandomToken()
-	if err != nil {
-		log.Printf("warning: could not generate auth token: %v — running without authentication", err)
-		return
-	}
-
-	cfg.Server.AuthToken = token
-	log.Printf("generated auth token (set UNRAID_MCP_AUTH_TOKEN to persist): %s", token)
-}
-
-// generateRandomToken returns a 32-character hex-encoded cryptographically
-// random token.
-func generateRandomToken() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("rand.Read: %w", err)
-	}
-	return hex.EncodeToString(b), nil
-}
 

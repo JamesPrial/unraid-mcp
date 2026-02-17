@@ -3,8 +3,6 @@ package system
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/jamesprial/unraid-mcp/internal/safety"
@@ -24,33 +22,6 @@ func SystemTools(mon SystemMonitor, audit *safety.AuditLogger) []tools.Registrat
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-// sysJSONResult marshals v to indented JSON and returns an mcp.CallToolResult.
-func sysJSONResult(v any) *mcp.CallToolResult {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return mcp.NewToolResultText(fmt.Sprintf("error marshaling result: %v", err))
-	}
-	return mcp.NewToolResultText(string(data))
-}
-
-// sysLogAudit logs a tool invocation to the audit logger if non-nil.
-func sysLogAudit(audit *safety.AuditLogger, tool string, params map[string]any, result string, start time.Time) {
-	if audit == nil {
-		return
-	}
-	_ = audit.Log(safety.AuditEntry{
-		Timestamp: start,
-		Tool:      tool,
-		Params:    params,
-		Result:    result,
-		Duration:  time.Since(start),
-	})
-}
-
-// ---------------------------------------------------------------------------
 // System tools
 // ---------------------------------------------------------------------------
 
@@ -65,12 +36,12 @@ func systemOverview(mon SystemMonitor, audit *safety.AuditLogger) tools.Registra
 
 		overview, err := mon.GetOverview(ctx)
 		if err != nil {
-			sysLogAudit(audit, "system_overview", params, "error: "+err.Error(), start)
-			return mcp.NewToolResultText(fmt.Sprintf("error: %s", err.Error())), nil
+			tools.LogAudit(audit, "system_overview", params, "error: "+err.Error(), start)
+			return tools.ErrorResult(err.Error()), nil
 		}
 
-		sysLogAudit(audit, "system_overview", params, "ok", start)
-		return sysJSONResult(overview), nil
+		tools.LogAudit(audit, "system_overview", params, "ok", start)
+		return tools.JSONResult(overview), nil
 	}
 
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
@@ -87,12 +58,12 @@ func systemArrayStatus(mon SystemMonitor, audit *safety.AuditLogger) tools.Regis
 
 		status, err := mon.GetArrayStatus(ctx)
 		if err != nil {
-			sysLogAudit(audit, "system_array_status", params, "error: "+err.Error(), start)
-			return mcp.NewToolResultText(fmt.Sprintf("error: %s", err.Error())), nil
+			tools.LogAudit(audit, "system_array_status", params, "error: "+err.Error(), start)
+			return tools.ErrorResult(err.Error()), nil
 		}
 
-		sysLogAudit(audit, "system_array_status", params, "ok", start)
-		return sysJSONResult(status), nil
+		tools.LogAudit(audit, "system_array_status", params, "ok", start)
+		return tools.JSONResult(status), nil
 	}
 
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}
@@ -109,12 +80,12 @@ func systemDisks(mon SystemMonitor, audit *safety.AuditLogger) tools.Registratio
 
 		disks, err := mon.GetDiskInfo(ctx)
 		if err != nil {
-			sysLogAudit(audit, "system_disks", params, "error: "+err.Error(), start)
-			return mcp.NewToolResultText(fmt.Sprintf("error: %s", err.Error())), nil
+			tools.LogAudit(audit, "system_disks", params, "error: "+err.Error(), start)
+			return tools.ErrorResult(err.Error()), nil
 		}
 
-		sysLogAudit(audit, "system_disks", params, "ok", start)
-		return sysJSONResult(disks), nil
+		tools.LogAudit(audit, "system_disks", params, "ok", start)
+		return tools.JSONResult(disks), nil
 	}
 
 	return tools.Registration{Tool: tool, Handler: server.ToolHandlerFunc(handler)}

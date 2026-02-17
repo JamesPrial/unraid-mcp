@@ -13,8 +13,13 @@ package vm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
+
+// ErrLibvirtNotCompiled is returned by all stub LibvirtVMManager methods when
+// the binary was built without the libvirt build tag.
+var ErrLibvirtNotCompiled = errors.New("libvirt support not compiled: rebuild with -tags libvirt")
 
 // LibvirtVMManager is the production VM manager backed by libvirt.
 // This stub is compiled when the "libvirt" build tag is absent.
@@ -28,9 +33,8 @@ type LibvirtVMManager struct {
 // client is not compiled in.  Build with -tags libvirt for production use.
 func NewLibvirtVMManager(socketPath string) (*LibvirtVMManager, error) {
 	return nil, fmt.Errorf(
-		"libvirt support not compiled: rebuild with -tags libvirt and ensure "+
-			"github.com/digitalocean/go-libvirt is in go.mod (socket: %s)",
-		socketPath,
+		"%w and ensure github.com/digitalocean/go-libvirt is in go.mod (socket: %s)",
+		ErrLibvirtNotCompiled, socketPath,
 	)
 }
 
@@ -39,60 +43,60 @@ func (m *LibvirtVMManager) Close() error { return nil }
 
 // ListVMs always returns an error in stub mode.
 func (m *LibvirtVMManager) ListVMs(_ context.Context) ([]VM, error) {
-	return nil, fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return nil, ErrLibvirtNotCompiled
 }
 
 // InspectVM always returns an error in stub mode.
 func (m *LibvirtVMManager) InspectVM(_ context.Context, name string) (*VMDetail, error) {
-	return nil, fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return nil, ErrLibvirtNotCompiled
 }
 
 // StartVM always returns an error in stub mode.
 func (m *LibvirtVMManager) StartVM(_ context.Context, name string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // StopVM always returns an error in stub mode.
 func (m *LibvirtVMManager) StopVM(_ context.Context, name string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // ForceStopVM always returns an error in stub mode.
 func (m *LibvirtVMManager) ForceStopVM(_ context.Context, name string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // PauseVM always returns an error in stub mode.
 func (m *LibvirtVMManager) PauseVM(_ context.Context, name string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // ResumeVM always returns an error in stub mode.
 func (m *LibvirtVMManager) ResumeVM(_ context.Context, name string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // RestartVM always returns an error in stub mode.
 func (m *LibvirtVMManager) RestartVM(_ context.Context, name string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // CreateVM always returns an error in stub mode.
 func (m *LibvirtVMManager) CreateVM(_ context.Context, xmlConfig string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // DeleteVM always returns an error in stub mode.
 func (m *LibvirtVMManager) DeleteVM(_ context.Context, name string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
 
 // ListSnapshots always returns an error in stub mode.
 func (m *LibvirtVMManager) ListSnapshots(_ context.Context, vmName string) ([]Snapshot, error) {
-	return nil, fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return nil, ErrLibvirtNotCompiled
 }
 
 // CreateSnapshot always returns an error in stub mode.
 func (m *LibvirtVMManager) CreateSnapshot(_ context.Context, vmName, snapName string) error {
-	return fmt.Errorf("libvirt support not compiled: rebuild with -tags libvirt")
+	return ErrLibvirtNotCompiled
 }
