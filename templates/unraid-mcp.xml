@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>unraid-mcp</Name>
+  <Repository>jamesprial/unraid-mcp:latest</Repository>
+  <Registry>https://hub.docker.com/r/jamesprial/unraid-mcp</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/JamesPrial/unraid-mcp/issues</Support>
+  <Project>https://github.com/JamesPrial/unraid-mcp</Project>
+  <Overview>MCP (Model Context Protocol) server for Unraid. Exposes Docker, VM, array, notification, share, and UPS tools to AI assistants over Streamable HTTP with Bearer token authentication.[br][br]Provides tools for: Docker container/network management, VM lifecycle (libvirt), system health (CPU, memory, temps), array status, disk info, notifications, shares, and UPS monitoring.[br][br][b]Required mounts:[/b] Docker socket, emhttp state, /proc, /sys[br][b]Optional:[/b] Libvirt socket (VM tools), GraphQL API key (array/notification/share/UPS tools)</Overview>
+  <Category>Tools: Network:Management</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/JamesPrial/unraid-mcp/main/templates/unraid-mcp.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/JamesPrial/unraid-mcp/main/templates/icon.png</Icon>
+  <ExtraParams>--add-host=host.docker.internal:host-gateway --group-add 0</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <Description>MCP server for Unraid exposing Docker, VM, array, and system health tools to AI assistants.</Description>
+
+  <!-- MCP Server Port -->
+  <Config Name="MCP Server Port" Target="8080" Default="8080" Mode="tcp" Description="HTTP port for the MCP Streamable HTTP transport endpoint." Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+
+  <!-- Auth Token -->
+  <Config Name="Auth Token" Target="UNRAID_MCP_AUTH_TOKEN" Default="" Mode="" Description="Bearer token for MCP authentication. Auto-generated and logged on first start if left empty. Set a persistent value to avoid regeneration on restart." Type="Variable" Display="always" Required="false" Mask="true"/>
+
+  <!-- Config Directory -->
+  <Config Name="Config Directory" Target="/config" Default="/mnt/user/appdata/unraid-mcp" Mode="rw" Description="Persistent storage for config.yaml and audit.log." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/unraid-mcp</Config>
+
+  <!-- Docker Socket -->
+  <Config Name="Docker Socket" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="rw" Description="Docker daemon Unix socket. Required for all Docker container and network management tools." Type="Path" Display="always" Required="true" Mask="false">/var/run/docker.sock</Config>
+
+  <!-- Unraid Array State -->
+  <Config Name="Emhttp State" Target="/host/emhttp" Default="/var/local/emhttp" Mode="ro" Description="Unraid emhttp state directory. Used to read array and disk status." Type="Path" Display="always" Required="true" Mask="false">/var/local/emhttp</Config>
+
+  <!-- Host /proc -->
+  <Config Name="Host /proc" Target="/host/proc" Default="/proc" Mode="ro" Description="Host proc filesystem for CPU and memory metrics." Type="Path" Display="always" Required="true" Mask="false">/proc</Config>
+
+  <!-- Host /sys -->
+  <Config Name="Host /sys" Target="/host/sys" Default="/sys" Mode="ro" Description="Host sys filesystem for hardware temperature sensors." Type="Path" Display="always" Required="true" Mask="false">/sys</Config>
+
+  <!-- Libvirt Socket (optional) -->
+  <Config Name="Libvirt Socket" Target="/var/run/libvirt/libvirt-sock" Default="/var/run/libvirt/libvirt-sock" Mode="rw" Description="Libvirt Unix socket for VM management. VM tools are automatically disabled if this is absent or inaccessible." Type="Path" Display="advanced" Required="false" Mask="false">/var/run/libvirt/libvirt-sock</Config>
+
+  <!-- GraphQL API Key (optional) -->
+  <Config Name="GraphQL API Key" Target="UNRAID_GRAPHQL_API_KEY" Default="" Mode="" Description="API key for Unraid GraphQL API. Enables array, notification, share, and UPS tools. Generate one in Unraid Settings > Management Access > API Keys." Type="Variable" Display="always" Required="false" Mask="true"/>
+</Container>

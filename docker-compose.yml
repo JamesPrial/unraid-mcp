@@ -1,6 +1,6 @@
 services:
   unraid-mcp:
-    build: .
+    image: jamesprial/unraid-mcp:latest
     container_name: unraid-mcp
     ports:
       - "8080:8080"
@@ -10,7 +10,7 @@ services:
       - /var/local/emhttp:/host/emhttp:ro
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
-      - ./config:/config
+      - /mnt/user/appdata/unraid-mcp:/config
     environment:
       - UNRAID_MCP_AUTH_TOKEN=${UNRAID_MCP_AUTH_TOKEN:-}
       - UNRAID_GRAPHQL_API_KEY=${UNRAID_GRAPHQL_API_KEY:-}
