@@ -314,12 +314,10 @@ func Test_Manager_List_Cases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var capturedQuery string
-			var capturedVars map[string]any
 
 			client := &mockGraphQLClient{
 				executeFunc: func(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
 					capturedQuery = query
-					capturedVars = variables
 					if tt.clientErr != nil {
 						return nil, tt.clientErr
 					}
@@ -345,11 +343,6 @@ func Test_Manager_List_Cases(t *testing.T) {
 				t.Errorf("len(notifs) = %d, want %d", len(notifs), tt.wantCount)
 			}
 
-			// Verify the query was called with expected filter/limit.
-			if tt.filterType != "" && !strings.Contains(capturedQuery, "notification") && capturedVars == nil {
-				// Just verify Execute was called; actual query verification is
-				// lenient since we do not want to couple to query text.
-			}
 			_ = capturedQuery // suppress unused warning
 
 			if tt.validate != nil {
@@ -376,11 +369,9 @@ func Test_Manager_List_QueryContainsFilterType(t *testing.T) {
 
 	// The filter type should appear somewhere -- either in the query or variables.
 	queryOrVarsContains := strings.Contains(capturedQuery, "ARCHIVE")
-	if capturedVars != nil {
-		for _, v := range capturedVars {
-			if s, ok := v.(string); ok && s == "ARCHIVE" {
-				queryOrVarsContains = true
-			}
+	for _, v := range capturedVars {
+		if s, ok := v.(string); ok && s == "ARCHIVE" {
+			queryOrVarsContains = true
 		}
 	}
 	if !queryOrVarsContains {
@@ -405,17 +396,15 @@ func Test_Manager_List_QueryContainsLimit(t *testing.T) {
 
 	// The limit should appear somewhere -- either in the query or variables.
 	queryOrVarsContains := strings.Contains(capturedQuery, "42")
-	if capturedVars != nil {
-		for _, v := range capturedVars {
-			switch v := v.(type) {
-			case int:
-				if v == 42 {
-					queryOrVarsContains = true
-				}
-			case float64:
-				if v == 42 {
-					queryOrVarsContains = true
-				}
+	for _, v := range capturedVars {
+		switch v := v.(type) {
+		case int:
+			if v == 42 {
+				queryOrVarsContains = true
+			}
+		case float64:
+			if v == 42 {
+				queryOrVarsContains = true
 			}
 		}
 	}

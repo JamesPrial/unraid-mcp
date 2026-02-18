@@ -83,7 +83,7 @@ func Test_ApplyEnvOverrides_Cases(t *testing.T) {
 				// Register cleanup via t.Setenv, then immediately remove
 				// the variable so os.LookupEnv returns (_, false).
 				t.Setenv("UNRAID_MCP_AUTH_TOKEN", "")
-				os.Unsetenv("UNRAID_MCP_AUTH_TOKEN")
+				_ = os.Unsetenv("UNRAID_MCP_AUTH_TOKEN")
 			}
 
 			cfg := &Config{
@@ -173,13 +173,13 @@ func Test_ApplyEnvOverrides_GraphQL(t *testing.T) {
 				t.Setenv("UNRAID_GRAPHQL_URL", tt.envURL)
 			} else {
 				t.Setenv("UNRAID_GRAPHQL_URL", "")
-				os.Unsetenv("UNRAID_GRAPHQL_URL")
+				_ = os.Unsetenv("UNRAID_GRAPHQL_URL")
 			}
 			if tt.setKey {
 				t.Setenv("UNRAID_GRAPHQL_API_KEY", tt.envKey)
 			} else {
 				t.Setenv("UNRAID_GRAPHQL_API_KEY", "")
-				os.Unsetenv("UNRAID_GRAPHQL_API_KEY")
+				_ = os.Unsetenv("UNRAID_GRAPHQL_API_KEY")
 			}
 
 			cfg := &Config{

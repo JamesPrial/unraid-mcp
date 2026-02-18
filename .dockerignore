@@ -1,0 +1,10 @@
+.git
+.gitignore
+.claude
+testdata
+*.md
+config.yaml
+audit.log
+.DS_Store
+.idea
+.vscode

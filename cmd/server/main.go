@@ -48,7 +48,7 @@ func main() {
 			log.Printf("warning: could not open audit log %q: %v — audit logging disabled", cfg.Audit.LogPath, err)
 		} else {
 			auditLogger = safety.NewAuditLogger(f)
-			defer f.Close()
+			defer func() { _ = f.Close() }()
 		}
 	}
 

@@ -77,7 +77,7 @@ func (m *DockerClientManager) doRequest(ctx context.Context, method, path string
 
 // readBody reads the full response body and closes it.
 func readBody(resp *http.Response) ([]byte, error) {
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("docker: read response body: %w", err)
@@ -453,7 +453,7 @@ func (m *DockerClientManager) PullImage(ctx context.Context, image string) error
 	}
 	// Drain and discard the streaming JSON progress output.
 	io.Copy(io.Discard, resp.Body) //nolint:errcheck
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return fmt.Errorf("image not found: %s", image)
@@ -478,7 +478,7 @@ func (m *DockerClientManager) GetLogs(ctx context.Context, id string, tail int) 
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return "", fmt.Errorf("container not found: %s", id)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -487,7 +487,7 @@ func (m *DockerClientManager) GetLogs(ctx context.Context, id string, tail int) 
 			return "", fmt.Errorf("docker: get logs: %w", err)
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Docker multiplexes stdout/stderr using an 8-byte header per frame.
 	// We demultiplex manually: header[0] is stream type, header[4:8] is size.
@@ -628,12 +628,7 @@ func (m *DockerClientManager) ListNetworks(ctx context.Context) ([]Network, erro
 
 	networks := make([]Network, 0, len(raw))
 	for _, n := range raw {
-		networks = append(networks, Network{
-			ID:     n.ID,
-			Name:   n.Name,
-			Driver: n.Driver,
-			Scope:  n.Scope,
-		})
+		networks = append(networks, Network(n))
 	}
 	return networks, nil
 }

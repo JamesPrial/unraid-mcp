@@ -12,5 +12,20 @@ services:
       - /sys:/host/sys:ro
       - ./config:/config
     environment:
-      - UNRAID_MCP_AUTH_TOKEN=${UNRAID_MCP_AUTH_TOKEN}
+      - UNRAID_MCP_AUTH_TOKEN=${UNRAID_MCP_AUTH_TOKEN:-}
+      - UNRAID_GRAPHQL_API_KEY=${UNRAID_GRAPHQL_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    group_add:
+      - "0"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped

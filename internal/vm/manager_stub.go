@@ -25,9 +25,7 @@ var ErrLibvirtNotCompiled = errors.New("libvirt support not compiled: rebuild wi
 // This stub is compiled when the "libvirt" build tag is absent.
 // The real implementation (requiring github.com/digitalocean/go-libvirt) is in
 // manager.go and is guarded by the "libvirt" build tag.
-type LibvirtVMManager struct {
-	socketPath string
-}
+type LibvirtVMManager struct{}
 
 // NewLibvirtVMManager returns an error in stub mode because the real libvirt
 // client is not compiled in.  Build with -tags libvirt for production use.

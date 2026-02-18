@@ -11,7 +11,6 @@ import (
 
 	"github.com/jamesprial/unraid-mcp/internal/graphql"
 	"github.com/jamesprial/unraid-mcp/internal/safety"
-	"github.com/jamesprial/unraid-mcp/internal/tools"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -1018,7 +1017,7 @@ func Test_UPSTools_ReturnsToolsRegistrations(t *testing.T) {
 	}
 
 	// This is a compile-time type check: UPSTools must return []tools.Registration.
-	var regs []tools.Registration = UPSTools(mon, nil)
+	regs := UPSTools(mon, nil)
 	if regs == nil {
 		t.Fatal("UPSTools() returned nil")
 	}

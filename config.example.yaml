@@ -24,6 +24,6 @@ audit:
   max_size_mb: 50
 
 graphql:
-  url: "http://localhost/graphql"  # Unraid GraphQL API endpoint
+  url: "http://host.docker.internal/graphql"  # Unraid GraphQL API endpoint (use host.docker.internal from inside Docker)
   api_key: ""                      # x-api-key header value (or set UNRAID_GRAPHQL_API_KEY)
   timeout: 30                      # request timeout in seconds

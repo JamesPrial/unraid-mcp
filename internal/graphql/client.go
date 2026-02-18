@@ -105,7 +105,7 @@ func (c *HTTPClient) Execute(ctx context.Context, query string, variables map[st
 	if err != nil {
 		return nil, fmt.Errorf("graphql: request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return nil, fmt.Errorf("graphql: authentication failed (HTTP 401)")

@@ -16,7 +16,7 @@ import (
 func Test_ErrLibvirtNotCompiled_SatisfiesErrorInterface(t *testing.T) {
 	// The sentinel must satisfy the error interface. Calling .Error() must
 	// not panic and must return a non-empty string.
-	var err error = ErrLibvirtNotCompiled
+	err := ErrLibvirtNotCompiled
 	msg := err.Error()
 	if msg == "" {
 		t.Fatal("ErrLibvirtNotCompiled.Error() returned empty string")
