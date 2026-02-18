@@ -104,6 +104,16 @@ func Test_LoadConfig_Cases(t *testing.T) {
 				if cfg.Audit.MaxSizeMB != 100 {
 					t.Errorf("Audit.MaxSizeMB = %d, want 100", cfg.Audit.MaxSizeMB)
 				}
+				// GraphQL
+				if cfg.GraphQL.URL != "http://192.168.1.100/graphql" {
+					t.Errorf("GraphQL.URL = %q, want %q", cfg.GraphQL.URL, "http://192.168.1.100/graphql")
+				}
+				if cfg.GraphQL.APIKey != "test-graphql-key" {
+					t.Errorf("GraphQL.APIKey = %q, want %q", cfg.GraphQL.APIKey, "test-graphql-key")
+				}
+				if cfg.GraphQL.Timeout != 60 {
+					t.Errorf("GraphQL.Timeout = %d, want 60", cfg.GraphQL.Timeout)
+				}
 			},
 		},
 		{
@@ -263,6 +273,33 @@ func Test_DefaultConfig_Values(t *testing.T) {
 				t.Helper()
 				if cfg.Paths.Sys != "/host/sys" {
 					t.Errorf("Paths.Sys = %q, want %q", cfg.Paths.Sys, "/host/sys")
+				}
+			},
+		},
+		{
+			name: "graphql url default",
+			validate: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				if cfg.GraphQL.URL != "http://localhost/graphql" {
+					t.Errorf("GraphQL.URL = %q, want %q", cfg.GraphQL.URL, "http://localhost/graphql")
+				}
+			},
+		},
+		{
+			name: "graphql timeout default is 30",
+			validate: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				if cfg.GraphQL.Timeout != 30 {
+					t.Errorf("GraphQL.Timeout = %d, want 30", cfg.GraphQL.Timeout)
+				}
+			},
+		},
+		{
+			name: "graphql api key default is empty",
+			validate: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				if cfg.GraphQL.APIKey != "" {
+					t.Errorf("GraphQL.APIKey = %q, want empty", cfg.GraphQL.APIKey)
 				}
 			},
 		},

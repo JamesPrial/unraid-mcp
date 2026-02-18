@@ -26,3 +26,8 @@ audit:
   enabled: true
   log_path: "/custom/audit.log"
   max_size_mb: 100
+
+graphql:
+  url: "http://192.168.1.100/graphql"
+  api_key: "test-graphql-key"
+  timeout: 60

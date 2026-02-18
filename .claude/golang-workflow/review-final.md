@@ -1,124 +1,182 @@
-# Final Code Review -- Unraid MCP Refactoring
+# Final Code Review: GraphQL Integration into unraid-mcp
 
-**Reviewer:** Go Code Reviewer (Opus 4.6)
-**Date:** 2026-02-17
-**Scope:** 5-stage refactoring across 11 implementation files
-
----
-
-## Files Reviewed
-
-| File | Purpose |
-|------|---------|
-| `/Users/jamesprial/code/unraid-mcp/internal/tools/helpers.go` | Shared helpers: JSONResult, ErrorResult, LogAudit, ConfirmPrompt |
-| `/Users/jamesprial/code/unraid-mcp/internal/tools/registration.go` | Registration type and RegisterAll |
-| `/Users/jamesprial/code/unraid-mcp/internal/docker/tools.go` | DockerTools factory + DestructiveTools list |
-| `/Users/jamesprial/code/unraid-mcp/internal/docker/container_tools.go` | 10 container tool handlers |
-| `/Users/jamesprial/code/unraid-mcp/internal/docker/network_tools.go` | 6 network tool handlers |
-| `/Users/jamesprial/code/unraid-mcp/internal/docker/manager.go` | DockerClientManager (all 16 methods), unified checkAPIError |
-| `/Users/jamesprial/code/unraid-mcp/internal/docker/types.go` | ContainerManager, NetworkManager, DockerManager (composite) |
-| `/Users/jamesprial/code/unraid-mcp/internal/vm/tools.go` | VMTools factory + DestructiveTools list |
-| `/Users/jamesprial/code/unraid-mcp/internal/vm/manager_stub.go` | ErrLibvirtNotCompiled sentinel + stub methods |
-| `/Users/jamesprial/code/unraid-mcp/internal/system/tools.go` | SystemTools factory (3 read-only tools) |
-| `/Users/jamesprial/code/unraid-mcp/internal/config/config.go` | ApplyEnvOverrides, EnsureAuthToken, GenerateRandomToken |
-| `/Users/jamesprial/code/unraid-mcp/cmd/server/main.go` | Entry point, wiring |
+**Reviewer:** Go Code Reviewer (automated)
+**Date:** 2026-02-18
+**Scope:** All new GraphQL implementation files, domain packages, tests, and main.go wiring
 
 ---
 
-## Review Checklist
+## VERDICT: REQUEST_CHANGES
 
-### 1. No Missing Call Site Updates
-
-- [x] All old local helper functions (`jsonResult`, `errorResult`, `logAudit`, `confirmPrompt`) are fully removed. Grep for lowercase variants returns zero matches in `.go` files.
-- [x] Old `checkError` function is fully replaced by `checkAPIError` in `manager.go`. No references to the old name remain.
-- [x] Old `applyEnvOverrides`, `ensureAuthToken`, `generateRandomToken` (unexported, formerly in main.go) are fully removed. The exported equivalents in `internal/config/config.go` are used instead.
-- [x] Old inline `destructiveDockerTools` / `destructiveVMTools` slices in main.go are replaced by `docker.DestructiveTools` and `vm.DestructiveTools`.
-
-### 2. Error Handling
-
-- [x] `checkAPIError` in `/Users/jamesprial/code/unraid-mcp/internal/docker/manager.go` (line 90) correctly handles 2xx success, 404 with custom message, API error JSON parsing, and fallback for unknown status codes. Error wrapping uses `%w` where wrapping is intended and `%s` for user-facing messages (correct pattern).
-- [x] `EnsureAuthToken` in `/Users/jamesprial/code/unraid-mcp/internal/config/config.go` (line 104) properly wraps the error from `GenerateRandomToken` with `%w`.
-- [x] `NewLibvirtVMManager` in `/Users/jamesprial/code/unraid-mcp/internal/vm/manager_stub.go` (line 34) correctly wraps `ErrLibvirtNotCompiled` with `%w`, enabling `errors.Is` checks.
-- [x] All tool handlers consistently return `(result, nil)` even on operational errors, reserving non-nil error returns for framework-level failures. This is the correct MCP pattern.
-- [x] `LogAudit` nil-guards the audit logger (line 29 of helpers.go).
-
-### 3. Documentation
-
-- [x] All exported types in `types.go` have doc comments: `Container`, `ContainerDetail`, `ContainerConfig`, `NetworkInfo`, `Mount`, `ContainerCreateConfig`, `ContainerStats`, `Network`, `NetworkDetail`, `NetworkCreateConfig`, `ContainerManager`, `NetworkManager`, `DockerManager`.
-- [x] All exported functions have doc comments: `JSONResult`, `ErrorResult`, `LogAudit`, `ConfirmPrompt`, `RegisterAll`, `DockerTools`, `VMTools`, `SystemTools`, `LoadConfig`, `DefaultConfig`, `ApplyEnvOverrides`, `EnsureAuthToken`, `GenerateRandomToken`.
-- [x] All exported variables have doc comments: `docker.DestructiveTools`, `vm.DestructiveTools`, `vm.ErrLibvirtNotCompiled`.
-- [x] Package-level doc comments present on all packages.
-
-### 4. Import Correctness
-
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/tools/helpers.go`: Imports `encoding/json`, `fmt`, `time`, `safety`, `mcp` -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/docker/container_tools.go`: Imports `context`, `fmt`, `time`, `safety`, `tools`, `mcp`, `server` -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/docker/network_tools.go`: Same import set -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/docker/tools.go`: Imports `safety`, `tools` -- both used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/docker/manager.go`: Imports `bytes`, `context`, `encoding/json`, `fmt`, `io`, `net`, `net/http`, `strconv`, `strings`, `time` -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/docker/types.go`: Imports `context`, `time` -- both used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/vm/tools.go`: Imports `context`, `fmt`, `time`, `safety`, `tools`, `mcp`, `server` -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/vm/manager_stub.go`: Imports `context`, `errors`, `fmt` -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/system/tools.go`: Imports `context`, `time`, `safety`, `tools`, `mcp`, `server` -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/internal/config/config.go`: Imports `crypto/rand`, `encoding/hex`, `fmt`, `os`, `yaml.v3` -- all used.
-- [x] `/Users/jamesprial/code/unraid-mcp/cmd/server/main.go`: Imports `context`, `fmt`, `log`, `net/http`, `os`, `os/signal`, `syscall`, `time`, `auth`, `config`, `docker`, `safety`, `system`, `tools`, `vm`, `server` -- all used.
-- [x] No unused imports detected in any file.
-
-### 5. Interface Design (Stage 5)
-
-- [x] `ContainerManager` interface (10 methods) and `NetworkManager` interface (6 methods) are cleanly separated in `/Users/jamesprial/code/unraid-mcp/internal/docker/types.go`.
-- [x] `DockerManager` is a composite interface embedding both -- backward compatible.
-- [x] Compile-time interface satisfaction checks exist: `var _ DockerManager = (*DockerClientManager)(nil)` in `manager.go` (line 865) and comprehensive checks in `interface_test.go` for both `DockerClientManager` and `MockDockerManager` against all three interfaces.
-- [x] The tool handler functions accept `DockerManager` (the composite), preserving backward compatibility while the split interfaces are available for callers who need only a subset.
-
-### 6. Behavior Preservation
-
-- [x] The `DestructiveTools` lists in `docker.DestructiveTools` and `vm.DestructiveTools` are **identical** to the original inline lists in the initial commit's `main.go`. Both contain exactly the same entries in the same logical grouping.
-- [x] Tool handler signatures, safety flow (filter -> confirm -> manager -> audit), and response formatting are unchanged.
-- [x] `docker_network_create` uses the confirmation flow but is NOT in `DestructiveTools` -- this matches the original behavior. The `ConfirmationTracker.Confirm()` and `RequestConfirmation()` methods work independently of the `NeedsConfirmation()` lookup. This is a pre-existing design choice, not a regression.
-- [x] `main.go` wiring: Docker, VM, and System tools are registered in the same order with the same dependencies.
-- [x] Graceful VM manager fallback preserved: if `NewLibvirtVMManager` fails, VM tools are skipped and a warning is logged.
-
-### 7. Nil Safety
-
-- [x] `LogAudit` guards against nil `*safety.AuditLogger` at line 29 of `helpers.go`.
-- [x] `ConfirmPrompt` does not guard against nil `*safety.ConfirmationTracker` -- but this is acceptable because all call sites guarantee a non-nil tracker (created via `safety.NewConfirmationTracker` in `main.go`).
-- [x] `InspectContainer` and `InspectNetwork` guard against empty ID strings.
-- [x] `NewDockerClientManager` guards against empty socket path.
-
-### 8. Code Organization
-
-- [x] Container tools cleanly separated from network tools into `container_tools.go` and `network_tools.go`.
-- [x] Factory functions (`DockerTools`, `VMTools`, `SystemTools`) provide a single point of registration per subsystem.
-- [x] Shared helpers centralized in `internal/tools/helpers.go`, eliminating duplication across 3 packages.
-- [x] Config helpers extracted from `main.go` into the proper `internal/config` package.
-- [x] `main.go` is now a thin wiring layer with no business logic.
-
-### 9. Test Coverage Assessment
-
-- [x] `helpers_test.go`: Comprehensive table-driven tests for all 4 exported helpers with edge cases (nil logger, unmarshalable input, empty strings, round-trip verification, token uniqueness, token consumability).
-- [x] `destructive_test.go`: Tests for both `docker.DestructiveTools` and `vm.DestructiveTools` validate length, contents, exact match, and absence of unexpected entries.
-- [x] `interface_test.go`: Reflection-based tests verify method counts, no overlap between sub-interfaces, embedding correctness, and assignability.
-- [x] `stub_error_test.go`: All 12 stub methods tested for `ErrLibvirtNotCompiled` sentinel.
-- [x] `helpers_test.go` (config): `ApplyEnvOverrides`, `EnsureAuthToken`, `GenerateRandomToken` all have comprehensive table-driven tests including concurrent safety.
-- [x] `manager_test.go`: Extensive mock-based tests for all 16 DockerManager methods, lifecycle tests, concurrent access tests, context cancellation.
+Two issues must be fixed before merging. One is a potential data mismatch bug, the other is a missing test coverage gap for a security-critical function. Everything else is high quality.
 
 ---
 
-## Observations (Non-Blocking)
+## Critical Issues (must fix)
 
-1. **`docker_network_create` not in `DestructiveTools`**: This tool has confirmation flow in its handler but is absent from the destructive tools list. Since `NeedsConfirmation()` is not called in the tool handler (the handler calls `Confirm`/`RequestConfirmation` directly), this works correctly. However, it means `dockerConfirm.NeedsConfirmation("docker_network_create")` returns `false`, which could be misleading if any future code relies on that method. This is pre-existing behavior, not a regression.
+### 1. UPS GraphQL query field name vs response struct mismatch
 
-2. **Container name not URL-encoded**: In `CreateContainer` (line 415 of `manager.go`), `config.Name` is appended to the URL path without URL encoding: `path += "?name=" + config.Name`. If a name contained special characters (e.g., spaces, `&`), this could produce a malformed URL. This is also pre-existing.
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/ups/manager.go`, line 35
 
-3. **PullImage image parameter not URL-encoded**: Similarly at line 449: `"/images/create?fromImage=" + image`. Pre-existing.
+The GraphQL query sends:
 
-These are all pre-existing minor issues that are out of scope for this refactoring review.
+```go
+const upsQuery = `query { ups { id name model status battery { charge runtime } power { inputVoltage outputVoltage load } } }`
+```
+
+But the response struct expects the JSON key `"upsDevices"`:
+
+```go
+type upsResponse struct {
+    UPS []UPSDevice `json:"upsDevices"`
+}
+```
+
+The query field is `ups`, which means the Unraid GraphQL API will return a response envelope where the key is `ups`, not `upsDevices`. For example: `{"ups": [...]}`. The `json:"upsDevices"` tag will never match that key, so `resp.UPS` will always be nil, and `GetDevices` will always return an empty slice regardless of how many UPS devices exist.
+
+The tests pass because every test mock returns JSON with `"upsDevices"` as the key -- which matches the struct tag but does not match what the real API would return given the query field name `ups`.
+
+**Fix:** Either change the JSON tag to `json:"ups"` to match the query, or change the query to use whatever field name the Unraid API actually returns. The test mock responses must also be updated to match the real API shape.
+
+### 2. No tests for `validateID` injection prevention or invalid filter types in notifications manager
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/notifications/manager.go`, lines 46 and 70-75
+
+The `validateID` function (line 70) and the `validFilterTypes` check (line 46) are security-critical guards against GraphQL injection. Neither has direct unit test coverage in `/Users/jamesprial/code/unraid-mcp/internal/notifications/manager_test.go`:
+
+- No test calls `List` with an invalid filter type (e.g., `"INVALID"`) to verify the error path.
+- No test calls `Archive`, `Unarchive`, or `Delete` with an ID containing `"`, `'`, or `\` to verify that `validateID` rejects them.
+- No test verifies that an empty ID is handled (it currently would pass `validateID` but produce a broken query string).
+
+Since these are the primary defense against query injection in the notification mutations, they need explicit test coverage.
+
+**Fix:** Add table-driven tests for:
+- `List` with invalid filter types (expect error with descriptive message)
+- `Archive`/`Unarchive`/`Delete` with IDs containing `"`, `'`, `\` (expect error from `validateID`)
+- Optionally, `Archive`/`Delete` with empty string IDs (to verify behavior)
 
 ---
 
-## Verdict
+## Moderate Issues (strongly recommended)
 
-**APPROVE**
+### 3. Nil client guard missing on all constructors
 
-The 5-stage refactoring is clean, correct, and complete. All old references have been updated. Exported APIs are well-documented. Error handling follows project conventions. The interface split is backward-compatible. Tests provide thorough coverage of the new code. No regressions detected. The code is ready for merge.
+**Files:**
+- `/Users/jamesprial/code/unraid-mcp/internal/notifications/manager.go`, line 31
+- `/Users/jamesprial/code/unraid-mcp/internal/array/manager.go`, line 24
+- `/Users/jamesprial/code/unraid-mcp/internal/shares/manager.go`, line 19
+- `/Users/jamesprial/code/unraid-mcp/internal/ups/manager.go`, line 23
+
+All four `NewGraphQL*` constructors accept a `graphql.Client` interface parameter but do not validate that it is non-nil. A nil client would cause a nil pointer dereference on the first `Execute` call. The `graphql.NewHTTPClient` constructor validates its config fields; these constructors should follow the same defensive pattern.
+
+This is not a blocking issue since `main.go` always creates the client before constructing managers, but it would be an easy nil-pointer crash if the wiring ever changes.
+
+**Recommendation:** Add a nil check at the top of each constructor:
+
+```go
+func NewGraphQLNotificationManager(client graphql.Client) *GraphQLNotificationManager {
+    if client == nil {
+        panic("notifications: nil graphql client")
+    }
+    // ...
+}
+```
+
+Or return an error. Either approach is acceptable.
+
+### 4. `validParityActions` map is referenced from both manager.go and tools.go
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/array/tools.go`, line 122
+
+The `parityCheck` tool handler validates the action against `validParityActions` (defined in `manager.go`, line 47) before dispatching. The manager's `ParityCheck` method also validates the same set. This dual validation is correct for defense-in-depth, but the two locations could drift if a new action is added to one but not the other. Consider extracting `ValidParityActions` as an exported function or using the manager as the single source of truth.
+
+Not blocking, but worth noting for maintainability.
+
+---
+
+## Positive Observations
+
+### Architecture and Design
+
+- **Clean interface-based design.** Every domain package defines an interface (`NotificationManager`, `ArrayManager`, `ShareManager`, `UPSMonitor`) with a single concrete GraphQL-backed implementation. This makes testing trivial and future transport swaps painless.
+
+- **Consistent layered structure.** Each package follows the same three-file pattern: `types.go` (interface + data types), `manager.go` (implementation), `tools.go` (MCP tool registration). This is easy to navigate and extend.
+
+- **Compile-time interface checks** (`var _ Interface = (*ConcreteType)(nil)`) are present in every implementation file. Good practice.
+
+- **Dependency injection throughout.** All managers accept `graphql.Client` interfaces. All tool functions accept manager interfaces. The `main.go` wiring composes everything cleanly.
+
+### Error Handling
+
+- **Consistent error wrapping with %w.** All manager-layer errors use `fmt.Errorf("context: %w", err)`, preserving the error chain. Example from `/Users/jamesprial/code/unraid-mcp/internal/graphql/client.go`, line 94: `fmt.Errorf("graphql: marshal request: %w", err)`.
+
+- **Tool handlers never return Go errors.** Every handler returns `(result, nil)` and surfaces errors via `tools.ErrorResult()`. This matches the MCP convention correctly and is tested exhaustively.
+
+- **Specific HTTP status handling.** The GraphQL client distinguishes 401 (auth failure) from other non-2xx codes with distinct error messages at lines 110-114 of `client.go`.
+
+### Security
+
+- **GraphQL injection prevention via allowlists.** The notifications manager uses `validFilterTypes` (line 15 of manager.go) to reject arbitrary filter strings before they are interpolated into queries. Parity actions use `validParityActions`. This is the correct approach for enum-like parameters.
+
+- **`validateID` character blocklist.** The notification ID validator (line 70 of `manager.go`) rejects `"`, `'`, and `\` characters to prevent string escape attacks in interpolated GraphQL queries.
+
+- **Confirmation tokens for destructive operations.** All mutating array tools and the `notifications_manage` tool require confirmation tokens. The `DestructiveTools` slices are correctly wired to `ConfirmationTracker` instances in `main.go`.
+
+- **API key not logged.** The audit logger captures tool name, params, and result, but the API key is never included in audit entries.
+
+### main.go Wiring
+
+- **Graceful degradation.** GraphQL tools are only registered when `cfg.GraphQL.URL != ""` (line 107). If `NewHTTPClient` fails, a warning is logged and the server continues without GraphQL tools. This matches the existing pattern for VM tools (line 77).
+
+- **Single shared confirmation tracker for all GraphQL destructive tools.** Lines 113-116 correctly aggregate destructive tool names from both `notifications.DestructiveTools` and `array.DestructiveTools` into one `gqlConfirm` tracker. This is appropriate because they share the same trust domain.
+
+- **Clean shutdown.** Signal handling, context timeout, and deferred file close are all present.
+
+### Test Quality
+
+- **Extensive table-driven tests.** The `client_test.go` file alone has table tests for URL normalization, constructor validation, HTTP status codes, and GraphQL error handling. Domain manager tests follow the same pattern.
+
+- **Mock isolation.** Each test package defines its own mock types that implement the relevant interface, avoiding cross-package test dependencies.
+
+- **Confirmation flow tested end-to-end.** Tests in `array/manager_test.go` exercise the full two-step confirmation flow: first call gets a token, second call uses it.
+
+- **Concurrent request test.** `Test_Execute_ConcurrentRequests` in `client_test.go` verifies the HTTP client is safe for concurrent use with 10 goroutines.
+
+- **Benchmarks included.** Every package includes benchmarks for hot paths (handler execution, manager operations).
+
+### Code Organization
+
+- **Consistent doc comments on all exported items.** Every exported type, function, constant, and variable has a Go doc comment.
+
+- **Idiomatic naming.** Types follow Go conventions: `GraphQLNotificationManager`, not `NotificationManagerGraphQL`. Tool names use snake_case as MCP convention requires.
+
+- **No unused imports or variables** detected across all files.
+
+---
+
+## Checklist Summary
+
+| Check | Status |
+|---|---|
+| All exported items documented | PASS |
+| Error handling follows %w pattern | PASS |
+| Nil safety guards on constructors | WARN (Issue #3) |
+| Table tests structured correctly | PASS |
+| Error paths have test coverage | FAIL (Issue #2 -- validateID/filterType) |
+| Naming conventions followed | PASS |
+| No logic errors | FAIL (Issue #1 -- UPS query/response mismatch) |
+| Confirmation for destructive ops | PASS |
+| GraphQL injection prevention | PASS (design), FAIL (test coverage) |
+| main.go wiring correct | PASS |
+| Audit logging consistent | PASS |
+| Resource cleanup uses defer | PASS |
+
+---
+
+## Required Actions Before Merge
+
+1. **Fix UPS query/response field name mismatch** -- Change `json:"upsDevices"` to match the actual GraphQL query field `ups`, or vice versa. Update test mocks to match the real API response shape.
+
+2. **Add tests for `validateID` and invalid filter types** -- These are security-critical code paths that currently have zero direct test coverage.
+
+After these two items are resolved, this integration is ready for Wave 4 verification.

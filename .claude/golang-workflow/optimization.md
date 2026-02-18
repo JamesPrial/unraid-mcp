@@ -774,3 +774,569 @@ These changes are low-risk and can be made in under an hour:
 - Consider adding `MaxSizeMB` log rotation for the audit file — the config
   struct has the field but `main.go` does not implement rotation. A growing
   unbounded log file is an operational issue on embedded Unraid hardware.
+
+---
+
+# GraphQL Integration Packages — Performance Review
+
+**Date:** 2026-02-18
+**Files reviewed:**
+- `internal/graphql/client.go`
+- `internal/graphql/tools.go`
+- `internal/notifications/manager.go`
+- `internal/notifications/tools.go`
+- `internal/array/manager.go`
+- `internal/array/tools.go`
+- `internal/shares/manager.go`
+- `internal/shares/tools.go`
+- `internal/ups/manager.go`
+- `internal/ups/tools.go`
+
+---
+
+## 1. Summary
+
+These five packages are the GraphQL integration layer. The MCP tools are
+I/O-bound by design: every tool call proxies to the Unraid GraphQL API over
+HTTP. No CPU-intensive computation occurs outside of JSON marshalling and
+string formatting. All packages pass the race detector with no data races.
+
+The most impactful issues found are:
+
+1. **Double JSON decode in `graphql_query` handler** — data returned by
+   `Execute` as `json.RawMessage` is immediately re-decoded into `any` to
+   enable `json.MarshalIndent`, wasting CPU and doubling allocations.
+2. **Per-call `map[string]any{}` heap allocation** in every tool handler
+   (`shares/tools.go`, `ups/tools.go`, `array/tools.go`), unconditionally
+   allocated even when the audit logger is nil.
+3. **`json.MarshalIndent` for all tool responses** — applies across
+   `tools.JSONResult`, adding unnecessary whitespace and ~20-30% extra
+   serialisation time. This continues the pattern already flagged for the
+   docker/vm packages above.
+4. **Query strings built with `fmt.Sprintf` on every call** in
+   `notifications/manager.go`. Since `filterType` and `limit` are validated
+   before use, these queries could be built more cheaply.
+5. **`bytes.NewReader` heap-allocation per request** in `client.go` — the
+   request body reader is heap-allocated and cannot be reused.
+6. **`json.NewDecoder` instantiated on every response** in `client.go` —
+   a short-lived struct that escapes to heap; `json.Unmarshal` would avoid it.
+
+---
+
+## 2. Benchmark Results (Apple M1, go1.24, arm64)
+
+### graphql package
+
+| Benchmark | ns/op | B/op | allocs/op |
+|-----------|-------|------|-----------|
+| `Execute_HappyPath` (real HTTP roundtrip) | 43,801 | 9,638 | 112 |
+| `Execute_WithVariables` | 45,482 | 9,658 | 113 |
+| `NewHTTPClient` | 61 | 128 | 3 |
+| `GraphQLQueryHandler_HappyPath` (mock) | 1,756 | 1,913 | 34 |
+| `GraphQLQueryHandler_WithVariables` (mock) | 2,191 | 2,553 | 45 |
+
+At 112 allocs / 9.6 KB per real HTTP round-trip, the per-request allocation
+budget is high. The HTTP stack dominates (connection management, header
+parsing, body buffering), but the application adds a measurable ~34 allocs on
+top for the handler path alone.
+
+### notifications package
+
+| Benchmark | ns/op | B/op | allocs/op |
+|-----------|-------|------|-----------|
+| `NotificationsList_Handler` | 1,210 | 2,401 | 35 |
+| `NotificationsManage_Archive` | 427 | 560 | 9 |
+
+### array package
+
+| Benchmark | ns/op | B/op | allocs/op |
+|-----------|-------|------|-----------|
+| `ArrayTools_Registration` | 1,250 | 4,508 | 34 |
+| `ArrayStart_WithToken` | 700 | 640 | 9 |
+
+### shares package
+
+| Benchmark | ns/op | B/op | allocs/op |
+|-----------|-------|------|-----------|
+| `Benchmark_List` (mock client, JSON marshal+unmarshal) | 6,145 | 3,706 | 64 |
+| `Benchmark_SharesListHandler` | 2,485 | 1,785 | 9 |
+
+The `Benchmark_List` benchmark includes `json.Marshal` inside the mock then
+`json.Unmarshal` in the manager — so it exercises two full encode/decode
+cycles that would not occur in production (where the raw bytes come directly
+from the HTTP response).
+
+### ups package
+
+| Benchmark | ns/op | B/op | allocs/op |
+|-----------|-------|------|-----------|
+| `UPSStatusHandler_HappyPath` | 1,865 | 1,016 | 8 |
+| `Benchmark_GetDevices` (mock, JSON unmarshal) | 2,362 | 592 | 21 |
+
+---
+
+## 3. Critical Issues
+
+### 3.1 Double JSON Round-Trip in `graphql_query` Handler
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/graphql/tools.go` lines 70-75
+
+**Problem:** `Execute` returns `json.RawMessage` bytes. The handler immediately
+unmarshals those bytes into `any` solely to pass them to `tools.JSONResult`,
+which calls `json.MarshalIndent`. This is a full decode followed by a full
+re-encode with no semantic transformation — wasted CPU and allocations.
+
+```go
+// Current — two JSON passes for no gain
+data, err := client.Execute(ctx, query, parsedVars)
+...
+var parsed any
+if err := json.Unmarshal(data, &parsed); err != nil {
+    ...
+}
+return tools.JSONResult(parsed), nil   // calls json.MarshalIndent on 'parsed'
+```
+
+**Fix:** Return the raw bytes directly. Add a `tools.RawJSONResult` helper that
+accepts `[]byte` and formats with `json.Indent`:
+
+```go
+// internal/tools/helpers.go — new helper
+func RawJSONResult(raw []byte) *mcp.CallToolResult {
+    var buf bytes.Buffer
+    if err := json.Indent(&buf, raw, "", "  "); err != nil {
+        // Fall back to compact if indenting fails.
+        return mcp.NewToolResultText(string(raw))
+    }
+    return mcp.NewToolResultText(buf.String())
+}
+```
+
+```go
+// internal/graphql/tools.go — updated handler
+data, err := client.Execute(ctx, query, parsedVars)
+if err != nil {
+    tools.LogAudit(audit, toolNameGraphQLQuery, params, "error: "+err.Error(), start)
+    return tools.ErrorResult(err.Error()), nil
+}
+
+tools.LogAudit(audit, toolNameGraphQLQuery, params, "ok", start)
+return tools.RawJSONResult(data), nil
+```
+
+**Expected impact:** Eliminates one `json.Unmarshal` allocation cycle per
+`graphql_query` call. Benchmark `GraphQLQueryHandler_HappyPath` is expected to
+drop from 34 to ~18 allocs/op and from 1,913 to ~900 B/op.
+
+---
+
+### 3.2 `json.NewDecoder` Heap Escape in `Execute`
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/graphql/client.go` line 118
+
+**Problem:** The response body is decoded via `json.NewDecoder(resp.Body).Decode(&gqlResp)`.
+The decoder struct escapes to heap (confirmed by escape analysis). For
+responses where the full body fits in memory (the typical case for GraphQL
+APIs), `json.Unmarshal` avoids the decoder heap allocation and is often faster
+because it operates on a contiguous byte slice.
+
+```go
+// Current — decoder struct escapes to heap
+var gqlResp graphqlResponse
+if err := json.NewDecoder(resp.Body).Decode(&gqlResp); err != nil {
+    ...
+}
+```
+
+**Fix:** Read the body once, then unmarshal from the byte slice. This also
+enables better error reporting (body contents are available if unmarshal fails):
+
+```go
+import "io"
+
+body, err := io.ReadAll(resp.Body)
+if err != nil {
+    return nil, fmt.Errorf("graphql: read response body: %w", err)
+}
+
+var gqlResp graphqlResponse
+if err := json.Unmarshal(body, &gqlResp); err != nil {
+    return nil, fmt.Errorf("graphql: decode response: %w", err)
+}
+```
+
+**Expected impact:** Removes one heap-allocated decoder struct per request.
+`io.ReadAll` is already buffered via the underlying TCP connection. No
+additional buffer is created beyond what the runtime manages through the HTTP
+transport.
+
+---
+
+## 4. Recommendations (Ordered by Impact)
+
+### 4.1 Eliminate Per-Call `map[string]any{}` in Tool Handlers
+
+**Files:**
+- `/Users/jamesprial/code/unraid-mcp/internal/shares/tools.go` line 30
+- `/Users/jamesprial/code/unraid-mcp/internal/ups/tools.go` line 33
+- `/Users/jamesprial/code/unraid-mcp/internal/array/tools.go` lines 48, 79
+
+**Problem:** Tool handlers that accept no interesting parameters allocate a
+fresh empty `map[string]any{}` for audit params on every call. Escape analysis
+confirms these maps escape to heap unconditionally.
+
+```go
+// shares/tools.go — empty map allocated unconditionally
+params := map[string]any{}
+
+// ups/tools.go — same pattern
+params := map[string]any{}
+```
+
+**Fix:** Pass `nil` directly. The `tools.LogAudit` helper accepts `nil` and
+the `AuditLogger` serialises a nil map as `{}` in JSON:
+
+```go
+// No params needed for parameterless tools
+tools.LogAudit(audit, "shares_list", nil, "ok", start)
+```
+
+For handlers that do have parameters (e.g., `notifications/tools.go` with
+`filter_type` and `limit`), guard the allocation behind an `audit != nil`
+check as already recommended in section 3.2 of the first review above:
+
+```go
+var params map[string]any
+if audit != nil {
+    params = map[string]any{"filter_type": filterType, "limit": limit}
+}
+```
+
+**Expected impact:** Eliminates 1-2 heap allocations per tool call for
+`shares_list`, `ups_status`, `array_start`, `array_stop`.
+
+---
+
+### 4.2 Use Parameterised GraphQL Variables Instead of `fmt.Sprintf` Query Interpolation
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/notifications/manager.go` lines 50-53
+
+**Problem:** The `List` method builds the GraphQL query by interpolating
+`filterType` and `limit` directly into the query string via `fmt.Sprintf`.
+This allocates a new string on every call, bypasses GraphQL variable type
+safety, and repeats work that the server could cache.
+
+```go
+// Current — new string allocation every call
+query := fmt.Sprintf(
+    `{ notifications { list(filter: { type: %s, limit: %d }) { ... } } }`,
+    filterType, limit,
+)
+```
+
+**Fix:** Use GraphQL variables, which are already supported by `Execute`:
+
+```go
+const listQuery = `query ListNotifications($type: NotificationFilterType!, $limit: Int!) {
+    notifications { list(filter: { type: $type, limit: $limit }) {
+        id title subject description importance timestamp
+    } }
+}`
+
+func (m *GraphQLNotificationManager) List(ctx context.Context, filterType string, limit int) ([]Notification, error) {
+    if !validFilterTypes[filterType] {
+        return nil, fmt.Errorf("invalid filter type %q: must be UNREAD, ALL, or ARCHIVE", filterType)
+    }
+    variables := map[string]any{
+        "type":  filterType,
+        "limit": limit,
+    }
+    data, err := m.client.Execute(ctx, listQuery, variables)
+    ...
+}
+```
+
+**Note:** This assumes the Unraid GraphQL schema defines `$type` as a named
+enum type and `$limit` as `Int`. Verify this against the schema before
+applying. If the schema does not support variable-typed filter arguments,
+the `fmt.Sprintf` approach is the only option — but then consider whether
+an LRU cache of N pre-built query strings (one per valid filter type) would
+reduce allocations.
+
+**Expected impact:** Eliminates one `fmt.Sprintf` string allocation per
+`notifications_list` call. Minor, but aligns with GraphQL best practice for
+server-side query plan caching.
+
+---
+
+### 4.3 Reuse `bytes.Buffer` for Request Bodies via `sync.Pool`
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/graphql/client.go` lines 92-97
+
+**Problem:** Every `Execute` call allocates:
+1. A `graphqlRequest` struct (escapes to heap via `json.Marshal`).
+2. The `bodyBytes []byte` from `json.Marshal`.
+3. A `bytes.Reader` wrapping those bytes (escapes to heap).
+
+These three allocations occur on every API call.
+
+```go
+// Current — three allocations per Execute call
+reqBody := graphqlRequest{Query: query, Variables: variables}
+bodyBytes, err := json.Marshal(reqBody)
+req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.graphqlURL,
+    bytes.NewReader(bodyBytes))
+```
+
+**Fix:** Pool a `bytes.Buffer` to avoid repeatedly allocating the request body
+backing array. The `bytes.Reader` cannot be pooled (it wraps a slice), but
+pooling the buffer eliminates the `bodyBytes` allocation:
+
+```go
+var bufPool = sync.Pool{
+    New: func() any { return new(bytes.Buffer) },
+}
+
+func (c *HTTPClient) Execute(ctx context.Context, query string, variables map[string]any) ([]byte, error) {
+    ...
+    buf := bufPool.Get().(*bytes.Buffer)
+    buf.Reset()
+    defer bufPool.Put(buf)
+
+    enc := json.NewEncoder(buf)
+    if err := enc.Encode(graphqlRequest{Query: query, Variables: variables}); err != nil {
+        return nil, fmt.Errorf("graphql: marshal request: %w", err)
+    }
+
+    req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.graphqlURL,
+        bytes.NewReader(buf.Bytes()))
+    ...
+}
+```
+
+**Expected impact:** Reduces per-Execute allocations from 3 to 1 for the
+request body path. Given 112 total allocs/op in the real HTTP benchmark, the
+savings are modest (~2.7%) but free of functional risk.
+
+---
+
+### 4.4 `notifications/tools.go` — Ephemeral `validActions` Map Created Per Call
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/notifications/tools.go` lines 155-161
+
+**Problem:** The `notifications_manage` handler constructs a local
+`map[string]struct{}` on every call to validate the action string. This map
+contains five entries and is allocated, populated, and immediately discarded.
+
+```go
+// Current — new map on every handler invocation
+validActions := map[string]struct{}{
+    "archive":     {},
+    "unarchive":   {},
+    "delete":      {},
+    "archive_all": {},
+    "delete_all":  {},
+}
+if _, ok := validActions[action]; !ok {
+    ...
+}
+```
+
+**Fix:** Declare the set as a package-level variable (same pattern used for
+`singleItemActions` and `destructiveActions` on lines 112-122):
+
+```go
+// package-level — allocated once at startup
+var validManageActions = map[string]struct{}{
+    "archive":     {},
+    "unarchive":   {},
+    "delete":      {},
+    "archive_all": {},
+    "delete_all":  {},
+}
+```
+
+**Expected impact:** Eliminates one map allocation per `notifications_manage`
+call. The benchmark shows 9 allocs/op for `NotificationsManage_Archive`; this
+removes one.
+
+---
+
+### 4.5 `formatNotification` — High Allocation Count from `fmt.Sprintf`
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/notifications/tools.go` lines 44-57
+
+**Problem:** `formatNotification` uses `fmt.Sprintf` with six string fields from
+a `Notification`. Escape analysis shows all six fields and the return value
+escape to heap. For a list of N notifications this generates N * ~7 allocations
+from formatting alone.
+
+```go
+// Current — fmt.Sprintf allocates for every notification
+func formatNotification(n Notification) string {
+    ts := "N/A"
+    if n.Timestamp != nil {
+        ts = *n.Timestamp
+    }
+    return fmt.Sprintf("%s [%s] %s — %s\n  Subject: %s\n  ID: %s\n  Timestamp: %s",
+        importanceMarker(n.Importance),
+        n.Importance, n.Title, n.Description,
+        n.Subject, n.ID, ts,
+    )
+}
+```
+
+**Fix:** Use `strings.Builder` to assemble the result:
+
+```go
+func formatNotification(n Notification) string {
+    ts := "N/A"
+    if n.Timestamp != nil {
+        ts = *n.Timestamp
+    }
+    marker := importanceMarker(n.Importance)
+
+    var sb strings.Builder
+    // Pre-size: marker + importance + title + description + subject + id + ts + separators
+    sb.Grow(len(marker) + len(n.Importance) + len(n.Title) + len(n.Description) +
+        len(n.Subject) + len(n.ID) + len(ts) + 40)
+
+    sb.WriteString(marker)
+    sb.WriteString(" [")
+    sb.WriteString(n.Importance)
+    sb.WriteString("] ")
+    sb.WriteString(n.Title)
+    sb.WriteString(" \u2014 ")
+    sb.WriteString(n.Description)
+    sb.WriteString("\n  Subject: ")
+    sb.WriteString(n.Subject)
+    sb.WriteString("\n  ID: ")
+    sb.WriteString(n.ID)
+    sb.WriteString("\n  Timestamp: ")
+    sb.WriteString(ts)
+    return sb.String()
+}
+```
+
+**Expected impact:** Reduces `NotificationsList_Handler` allocs from 35 to
+approximately 22 per call for a 3-notification list (from benchmark fixtures).
+For larger notification lists the saving scales linearly.
+
+---
+
+### 4.6 `graphql/client.go` — Omit `[]byte(gqlResp.Data)` Copy
+
+**File:** `/Users/jamesprial/code/unraid-mcp/internal/graphql/client.go` line 130
+
+**Problem:** The final return converts `json.RawMessage` to `[]byte` via an
+explicit conversion:
+
+```go
+return []byte(gqlResp.Data), nil
+```
+
+`json.RawMessage` is already defined as `type RawMessage []byte`. The
+conversion `[]byte(gqlResp.Data)` is a no-op type assertion — no copy occurs.
+This is fine, but it is misleading. Return `gqlResp.Data` directly to make
+the intent clear:
+
+```go
+return gqlResp.Data, nil
+```
+
+**Expected impact:** Zero runtime change; purely a clarity improvement.
+
+---
+
+## 5. Concurrency Analysis
+
+### Goroutine Lifecycle
+- No goroutines are started by any of the five packages. All work is performed
+  synchronously within the tool handler goroutine managed by `mcp-go`. No
+  goroutine leaks are possible.
+
+### Race Conditions
+- `HTTPClient` is safe for concurrent use. `httpClient *http.Client` handles
+  connection pooling internally with its own synchronisation.
+- The `graphqlURL` and `apiKey` fields are set at construction and never
+  mutated; concurrent reads require no synchronisation.
+- All package-level maps (`validFilterTypes`, `singleItemActions`,
+  `destructiveActions`, `validParityActions`) are initialised at package
+  init time and are read-only thereafter. Safe for concurrent access without
+  locks.
+- `ConfirmationTracker` uses a `sync.Mutex` correctly (as noted in the first
+  review above, section 2.1).
+- Race detector passes cleanly across all five packages.
+
+### Context Propagation
+- All `Execute` calls pass the caller's `context.Context` to
+  `http.NewRequestWithContext`. Context cancellation correctly aborts in-flight
+  HTTP requests.
+- Managers and tool handlers propagate context to all downstream calls. No
+  context is dropped or replaced.
+
+---
+
+## 6. Escape Analysis Findings (Key Items)
+
+Confirmed via `go build -gcflags='-m -m'`:
+
+| Location | Escaping Value | Root Cause | Recommendation |
+|----------|---------------|-----------|----------------|
+| `client.go:92` | `reqBody graphqlRequest` | Passed to `json.Marshal(interface{})` | Accept; unavoidable with standard `encoding/json` |
+| `client.go:97` | `&bytes.Reader{}` | Passed as `io.Reader` interface to `http.NewRequest` | Accept; pool `bytes.Buffer` (4.3) to reduce prior alloc |
+| `client.go:118` | `&json.Decoder{}` | Passed as interface receiver | Replace with `json.Unmarshal` (3.2) |
+| `client.go:117` | `gqlResp graphqlResponse` | Passed to `Decode` interface | Unavoidable; same fix as 3.2 |
+| `notifications/manager.go:52` | `filterType`, `limit` | Captured by `fmt.Sprintf` with `%s`/`%d` | Use variables (4.2) |
+| `notifications/tools.go:50-56` | All 6 notification fields | `fmt.Sprintf` parameter boxing | Use `strings.Builder` (4.5) |
+| `shares/tools.go:30` | `map[string]any{}` | Heap alloc regardless of audit state | Pass nil or guard (4.1) |
+| `ups/tools.go:33` | `map[string]any{}` | Heap alloc regardless of audit state | Pass nil or guard (4.1) |
+| `array/tools.go:48,79` | `map[string]any{}` | Heap alloc regardless of audit state | Pass nil or guard (4.1) |
+
+---
+
+## 7. Memory Allocation Summary
+
+| Location | Current allocs/call | Target after fixes | Key change |
+|----------|--------------------|--------------------|-----------|
+| `graphql_query` handler (mock) | 34 | ~18 | Eliminate double JSON decode (3.1) |
+| `notifications_list` handler | 35 | ~22 | `strings.Builder` in format (4.5); nil params (4.1) |
+| `notifications_manage` archive | 9 | 8 | Remove ephemeral validActions map (4.4) |
+| `shares_list` handler | 9 | 8 | Nil params map (4.1) |
+| `ups_status` handler | 8 | 7 | Nil params map (4.1) |
+| `array_start` with token | 9 | 8 | Nil params map (4.1) |
+| `Execute` real HTTP roundtrip | 112 | ~109 | `io.ReadAll` + `json.Unmarshal` (3.2); pooled buffer (4.3) |
+
+---
+
+## 8. Easy Wins Summary
+
+These changes are low-risk and can be applied in under an hour:
+
+1. **Remove `validActions` local map in `notifications_manage` handler** (4.4)
+   — declare at package level. Two lines added, six lines removed from handler.
+2. **Replace `json.NewDecoder` with `io.ReadAll` + `json.Unmarshal` in
+   `Execute`** (3.2) — removes one heap escape, improves error context.
+3. **Pass `nil` params map for zero-parameter tool handlers** (4.1)
+   — `shares_list`, `ups_status`, `array_start`, `array_stop`. One change per
+   handler, zero functional impact.
+4. **Add `tools.RawJSONResult` helper and eliminate double JSON decode in
+   `graphql_query` handler** (3.1) — highest allocation impact.
+5. **Clarify `return gqlResp.Data`** (4.6) — zero-cost readability cleanup.
+
+---
+
+## 9. Next Steps
+
+- Profile a real `notifications_list` call against a populated Unraid instance
+  with `go test -bench=. -cpuprofile=cpu.prof ./internal/notifications/...`
+  and inspect `go tool pprof -top cpu.prof` to confirm `fmt.Sprintf` is
+  visible in the profile.
+- Verify that the Unraid GraphQL schema supports typed variables for
+  `notifications { list(filter: { type: $type, limit: $limit }) }` before
+  applying recommendation 4.2.
+- Extend benchmark coverage to include a `Benchmark_List_LargeResponse`
+  case for `notifications` with 50+ items to surface the `fmt.Sprintf`
+  scaling behaviour (4.5).
+- Apply the `generateToken` stack-array fix from section 3.11 of the first
+  review (shared `ConfirmationTracker` used by array and notifications tools).

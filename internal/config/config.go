@@ -44,12 +44,21 @@ type ServerConfig struct {
 	AuthToken string `yaml:"auth_token"`
 }
 
+// GraphQLConfig holds connection details for the Unraid GraphQL API.
+type GraphQLConfig struct {
+	URL    string `yaml:"url"`
+	APIKey string `yaml:"api_key"`
+	// Timeout is the HTTP request timeout in seconds.
+	Timeout int `yaml:"timeout"`
+}
+
 // Config is the top-level configuration structure for the unraid-mcp server.
 type Config struct {
-	Server ServerConfig `yaml:"server"`
-	Safety SafetyConfig `yaml:"safety"`
-	Paths  PathsConfig  `yaml:"paths"`
-	Audit  AuditConfig  `yaml:"audit"`
+	Server  ServerConfig  `yaml:"server"`
+	Safety  SafetyConfig  `yaml:"safety"`
+	Paths   PathsConfig   `yaml:"paths"`
+	Audit   AuditConfig   `yaml:"audit"`
+	GraphQL GraphQLConfig `yaml:"graphql"`
 }
 
 // LoadConfig reads and parses a YAML configuration file from the given path.
@@ -87,14 +96,27 @@ func DefaultConfig() *Config {
 			Enabled: true,
 			LogPath: "/config/audit.log",
 		},
+		GraphQL: GraphQLConfig{
+			URL:     "http://localhost/graphql",
+			Timeout: 30,
+		},
 	}
 }
 
 // ApplyEnvOverrides updates cfg in place with values from environment variables.
-// Currently recognized: UNRAID_MCP_AUTH_TOKEN overrides cfg.Server.AuthToken.
+// Recognized variables:
+//   - UNRAID_MCP_AUTH_TOKEN overrides cfg.Server.AuthToken
+//   - UNRAID_GRAPHQL_URL overrides cfg.GraphQL.URL
+//   - UNRAID_GRAPHQL_API_KEY overrides cfg.GraphQL.APIKey
 func ApplyEnvOverrides(cfg *Config) {
 	if token := os.Getenv("UNRAID_MCP_AUTH_TOKEN"); token != "" {
 		cfg.Server.AuthToken = token
+	}
+	if url := os.Getenv("UNRAID_GRAPHQL_URL"); url != "" {
+		cfg.GraphQL.URL = url
+	}
+	if key := os.Getenv("UNRAID_GRAPHQL_API_KEY"); key != "" {
+		cfg.GraphQL.APIKey = key
 	}
 }
 

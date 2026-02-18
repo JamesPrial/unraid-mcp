@@ -110,6 +110,98 @@ func Test_ApplyEnvOverrides_Cases(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// ApplyEnvOverrides — GraphQL fields
+// ---------------------------------------------------------------------------
+
+func Test_ApplyEnvOverrides_GraphQL(t *testing.T) {
+	tests := []struct {
+		name       string
+		envURL     string
+		envKey     string
+		setURL     bool
+		setKey     bool
+		initialURL string
+		initialKey string
+		wantURL    string
+		wantKey    string
+	}{
+		{
+			name:       "UNRAID_GRAPHQL_URL overrides empty URL",
+			setURL:     true,
+			envURL:     "http://192.168.1.100/graphql",
+			initialURL: "",
+			wantURL:    "http://192.168.1.100/graphql",
+		},
+		{
+			name:       "UNRAID_GRAPHQL_URL overrides existing URL",
+			setURL:     true,
+			envURL:     "http://new/graphql",
+			initialURL: "http://old/graphql",
+			wantURL:    "http://new/graphql",
+		},
+		{
+			name:       "unset UNRAID_GRAPHQL_URL preserves existing",
+			setURL:     false,
+			initialURL: "http://existing/graphql",
+			wantURL:    "http://existing/graphql",
+		},
+		{
+			name:       "UNRAID_GRAPHQL_API_KEY overrides empty key",
+			setKey:     true,
+			envKey:     "my-key",
+			initialKey: "",
+			wantKey:    "my-key",
+		},
+		{
+			name:       "UNRAID_GRAPHQL_API_KEY overrides existing key",
+			setKey:     true,
+			envKey:     "new-key",
+			initialKey: "old-key",
+			wantKey:    "new-key",
+		},
+		{
+			name:       "unset UNRAID_GRAPHQL_API_KEY preserves existing",
+			setKey:     false,
+			initialKey: "existing-key",
+			wantKey:    "existing-key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setURL {
+				t.Setenv("UNRAID_GRAPHQL_URL", tt.envURL)
+			} else {
+				t.Setenv("UNRAID_GRAPHQL_URL", "")
+				os.Unsetenv("UNRAID_GRAPHQL_URL")
+			}
+			if tt.setKey {
+				t.Setenv("UNRAID_GRAPHQL_API_KEY", tt.envKey)
+			} else {
+				t.Setenv("UNRAID_GRAPHQL_API_KEY", "")
+				os.Unsetenv("UNRAID_GRAPHQL_API_KEY")
+			}
+
+			cfg := &Config{
+				GraphQL: GraphQLConfig{
+					URL:    tt.initialURL,
+					APIKey: tt.initialKey,
+				},
+			}
+
+			ApplyEnvOverrides(cfg)
+
+			if tt.wantURL != "" && cfg.GraphQL.URL != tt.wantURL {
+				t.Errorf("GraphQL.URL = %q, want %q", cfg.GraphQL.URL, tt.wantURL)
+			}
+			if tt.wantKey != "" && cfg.GraphQL.APIKey != tt.wantKey {
+				t.Errorf("GraphQL.APIKey = %q, want %q", cfg.GraphQL.APIKey, tt.wantKey)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
 // EnsureAuthToken
 // ---------------------------------------------------------------------------
 

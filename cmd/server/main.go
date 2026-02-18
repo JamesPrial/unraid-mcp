@@ -11,12 +11,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jamesprial/unraid-mcp/internal/array"
 	"github.com/jamesprial/unraid-mcp/internal/auth"
 	"github.com/jamesprial/unraid-mcp/internal/config"
 	"github.com/jamesprial/unraid-mcp/internal/docker"
+	"github.com/jamesprial/unraid-mcp/internal/graphql"
+	"github.com/jamesprial/unraid-mcp/internal/notifications"
 	"github.com/jamesprial/unraid-mcp/internal/safety"
+	"github.com/jamesprial/unraid-mcp/internal/shares"
 	"github.com/jamesprial/unraid-mcp/internal/system"
 	"github.com/jamesprial/unraid-mcp/internal/tools"
+	"github.com/jamesprial/unraid-mcp/internal/ups"
 	"github.com/jamesprial/unraid-mcp/internal/vm"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -97,6 +102,37 @@ func main() {
 	}
 
 	registrations = append(registrations, system.SystemTools(systemMon, auditLogger)...)
+
+	// GraphQL-backed tools (conditional on config).
+	if cfg.GraphQL.URL != "" {
+		gqlClient, gqlErr := graphql.NewHTTPClient(cfg.GraphQL)
+		if gqlErr != nil {
+			log.Printf("warning: GraphQL client initialization failed (%v) — GraphQL tools will not be registered", gqlErr)
+		} else {
+			// Collect destructive tool names for the shared confirmation tracker.
+			var gqlDestructive []string
+			gqlDestructive = append(gqlDestructive, notifications.DestructiveTools...)
+			gqlDestructive = append(gqlDestructive, array.DestructiveTools...)
+			gqlConfirm := safety.NewConfirmationTracker(gqlDestructive)
+
+			// Build domain managers.
+			notifMgr := notifications.NewGraphQLNotificationManager(gqlClient)
+			arrayMgr := array.NewGraphQLArrayManager(gqlClient)
+			shareMgr := shares.NewGraphQLShareManager(gqlClient)
+			upsMon := ups.NewGraphQLUPSMonitor(gqlClient)
+
+			// Register GraphQL escape hatch + domain tools.
+			registrations = append(registrations, graphql.GraphQLTools(gqlClient, auditLogger)...)
+			registrations = append(registrations, notifications.NotificationTools(notifMgr, gqlConfirm, auditLogger)...)
+			registrations = append(registrations, array.ArrayTools(arrayMgr, gqlConfirm, auditLogger)...)
+			registrations = append(registrations, shares.ShareTools(shareMgr, auditLogger)...)
+			registrations = append(registrations, ups.UPSTools(upsMon, auditLogger)...)
+
+			log.Printf("GraphQL tools registered (client: %s)", cfg.GraphQL.URL)
+		}
+	} else {
+		log.Println("GraphQL URL not configured, skipping GraphQL-backed tools")
+	}
 
 	tools.RegisterAll(mcpServer, registrations)
 

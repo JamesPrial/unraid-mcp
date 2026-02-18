@@ -1,233 +1,194 @@
-# Test Execution Report — Stage 1 (Foundation)
+# Test Execution Report — Stage 1: GraphQL Client
 
-**Date:** 2026-02-17
-**Working Directory:** /Users/jamesprial/code/unraid-mcp
+**Generated:** 2026-02-18
+**Package:** `github.com/jamesprial/unraid-mcp/internal/graphql`
+**Files under test:**
+- `/Users/jamesprial/code/unraid-mcp/internal/graphql/types.go`
+- `/Users/jamesprial/code/unraid-mcp/internal/graphql/client.go`
+**Test file:**
+- `/Users/jamesprial/code/unraid-mcp/internal/graphql/client_test.go`
 
 ---
 
 ## Summary
 
 - **Verdict:** TESTS_PASS
-- **Tests Run:** 56 passed, 0 failed
-- **Coverage:**
-  - `internal/config`:  100.0%
-  - `internal/auth`:    100.0%
-  - `internal/safety`:   90.2%
-  - **Overall (weighted):** ~96%
+- **Tests Run:** 28 passed, 0 failed (21 top-level tests + 7 sub-tests from table-driven cases)
+- **Coverage:** 94.9% of statements
 - **Race Conditions:** None
 - **Vet Warnings:** None
-- **Linter:** 1 non-critical warning (errcheck in test helper — not production code)
 
 ---
 
-## Step 1 — go mod tidy
+## Test Results
 
 ```
-(no output — dependencies already resolved)
-```
-
----
-
-## Step 2 — go build ./...
-
-```
-(no output — all packages compiled successfully)
-```
-
----
-
-## Step 3 — go vet ./...
-
-```
-(no output — no static analysis warnings)
-```
-
----
-
-## Step 4 — go test -v (all Stage 1 packages)
-
-### internal/config
-
-```
-=== RUN   Test_LoadConfig_Cases
-=== RUN   Test_LoadConfig_Cases/valid_config_loads_all_fields        PASS
-=== RUN   Test_LoadConfig_Cases/missing_file_returns_error           PASS
-=== RUN   Test_LoadConfig_Cases/invalid_YAML_returns_unmarshal_error PASS
-=== RUN   Test_LoadConfig_Cases/empty_file_returns_config_with_zero_values PASS
---- PASS: Test_LoadConfig_Cases (0.00s)
-
-=== RUN   Test_DefaultConfig_Values
-=== RUN   Test_DefaultConfig_Values/port_is_8080                     PASS
-=== RUN   Test_DefaultConfig_Values/audit_enabled_is_true            PASS
-=== RUN   Test_DefaultConfig_Values/audit_log_path_is_/config/audit.log PASS
-=== RUN   Test_DefaultConfig_Values/docker_socket_path               PASS
-=== RUN   Test_DefaultConfig_Values/libvirt_socket_path              PASS
-=== RUN   Test_DefaultConfig_Values/emhttp_path                      PASS
-=== RUN   Test_DefaultConfig_Values/proc_path                        PASS
-=== RUN   Test_DefaultConfig_Values/sys_path                         PASS
---- PASS: Test_DefaultConfig_Values (0.00s)
-
-=== RUN   Test_DefaultConfig_ReturnsNewInstance                      PASS
+=== RUN   Test_NewHTTPClient_Cases
+=== RUN   Test_NewHTTPClient_Cases/valid_config_with_URL_and_key
+=== RUN   Test_NewHTTPClient_Cases/URL_without_graphql_suffix
+=== RUN   Test_NewHTTPClient_Cases/empty_URL_returns_error
+=== RUN   Test_NewHTTPClient_Cases/zero_timeout_uses_default
+=== RUN   Test_NewHTTPClient_Cases/negative_timeout_uses_default
+=== RUN   Test_NewHTTPClient_Cases/empty_API_key_succeeds_at_construction_time
+--- PASS: Test_NewHTTPClient_Cases (0.00s)
+    --- PASS: Test_NewHTTPClient_Cases/valid_config_with_URL_and_key (0.00s)
+    --- PASS: Test_NewHTTPClient_Cases/URL_without_graphql_suffix (0.00s)
+    --- PASS: Test_NewHTTPClient_Cases/empty_URL_returns_error (0.00s)
+    --- PASS: Test_NewHTTPClient_Cases/zero_timeout_uses_default (0.00s)
+    --- PASS: Test_NewHTTPClient_Cases/negative_timeout_uses_default (0.00s)
+    --- PASS: Test_NewHTTPClient_Cases/empty_API_key_succeeds_at_construction_time (0.00s)
+=== RUN   Test_Execute_HappyPath
+--- PASS: Test_Execute_HappyPath (0.00s)
+=== RUN   Test_Execute_QueryWithVariables
+--- PASS: Test_Execute_QueryWithVariables (0.00s)
+=== RUN   Test_Execute_NilVariables
+--- PASS: Test_Execute_NilVariables (0.00s)
+=== RUN   Test_Execute_APIKeyHeader
+--- PASS: Test_Execute_APIKeyHeader (0.00s)
+=== RUN   Test_Execute_EmptyAPIKey_ReturnsError
+--- PASS: Test_Execute_EmptyAPIKey_ReturnsError (0.00s)
+=== RUN   Test_Execute_HTTP401
+--- PASS: Test_Execute_HTTP401 (0.00s)
+=== RUN   Test_Execute_HTTP500
+--- PASS: Test_Execute_HTTP500 (0.00s)
+=== RUN   Test_Execute_GraphQLSingleError
+--- PASS: Test_Execute_GraphQLSingleError (0.00s)
+=== RUN   Test_Execute_GraphQLMultipleErrors
+--- PASS: Test_Execute_GraphQLMultipleErrors (0.00s)
+=== RUN   Test_Execute_ContextCancelled
+--- PASS: Test_Execute_ContextCancelled (0.00s)
+=== RUN   Test_Execute_ContextDeadlineExceeded
+--- PASS: Test_Execute_ContextDeadlineExceeded (0.01s)
+=== RUN   Test_Execute_MalformedJSONResponse
+--- PASS: Test_Execute_MalformedJSONResponse (0.00s)
+=== RUN   Test_Execute_ConnectionRefused
+--- PASS: Test_Execute_ConnectionRefused (0.00s)
+=== RUN   Test_Execute_ConcurrentRequests
+--- PASS: Test_Execute_ConcurrentRequests (0.00s)
+=== RUN   Test_Execute_RequestMethod
+--- PASS: Test_Execute_RequestMethod (0.00s)
+=== RUN   Test_Execute_HTTPStatusCodes
+=== RUN   Test_Execute_HTTPStatusCodes/200_OK_with_valid_data_succeeds
+=== RUN   Test_Execute_HTTPStatusCodes/401_Unauthorized_returns_auth_error
+=== RUN   Test_Execute_HTTPStatusCodes/403_Forbidden_returns_error
+=== RUN   Test_Execute_HTTPStatusCodes/500_Internal_Server_Error
+=== RUN   Test_Execute_HTTPStatusCodes/502_Bad_Gateway
+=== RUN   Test_Execute_HTTPStatusCodes/503_Service_Unavailable
+--- PASS: Test_Execute_HTTPStatusCodes (0.00s)
+    --- PASS: Test_Execute_HTTPStatusCodes/200_OK_with_valid_data_succeeds (0.00s)
+    --- PASS: Test_Execute_HTTPStatusCodes/401_Unauthorized_returns_auth_error (0.00s)
+    --- PASS: Test_Execute_HTTPStatusCodes/403_Forbidden_returns_error (0.00s)
+    --- PASS: Test_Execute_HTTPStatusCodes/500_Internal_Server_Error (0.00s)
+    --- PASS: Test_Execute_HTTPStatusCodes/502_Bad_Gateway (0.00s)
+    --- PASS: Test_Execute_HTTPStatusCodes/503_Service_Unavailable (0.00s)
+=== RUN   Test_GraphQLError_JSONUnmarshal
+=== RUN   Test_GraphQLError_JSONUnmarshal/standard_error_message
+=== RUN   Test_GraphQLError_JSONUnmarshal/empty_message
+=== RUN   Test_GraphQLError_JSONUnmarshal/missing_message_field
+--- PASS: Test_GraphQLError_JSONUnmarshal (0.00s)
+    --- PASS: Test_GraphQLError_JSONUnmarshal/standard_error_message (0.00s)
+    --- PASS: Test_GraphQLError_JSONUnmarshal/empty_message (0.00s)
+    --- PASS: Test_GraphQLError_JSONUnmarshal/missing_message_field (0.00s)
+=== RUN   Test_GraphQLError_JSONMarshal
+--- PASS: Test_GraphQLError_JSONMarshal (0.00s)
+=== RUN   Test_GraphQLError_ZeroValue
+--- PASS: Test_GraphQLError_ZeroValue (0.00s)
+=== RUN   Test_Client_InterfaceHasExecuteMethod
+--- PASS: Test_Client_InterfaceHasExecuteMethod (0.00s)
 PASS
-ok  github.com/jamesprial/unraid-mcp/internal/config  0.507s
-```
-
-### internal/auth
-
-```
-=== RUN   Test_NewAuthMiddleware_Cases
-=== RUN   Test_NewAuthMiddleware_Cases/valid_token_passes_through           PASS
-=== RUN   Test_NewAuthMiddleware_Cases/missing_header_returns_401           PASS
-=== RUN   Test_NewAuthMiddleware_Cases/wrong_token_returns_401              PASS
-=== RUN   Test_NewAuthMiddleware_Cases/malformed_header_returns_401         PASS
-=== RUN   Test_NewAuthMiddleware_Cases/empty_token_config_disables_auth_-_no_header  PASS
-=== RUN   Test_NewAuthMiddleware_Cases/empty_token_config_disables_auth_-_any_header PASS
-=== RUN   Test_NewAuthMiddleware_Cases/Bearer_with_extra_spaces_returns_401 PASS
-=== RUN   Test_NewAuthMiddleware_Cases/empty_Authorization_header_returns_401 PASS
-=== RUN   Test_NewAuthMiddleware_Cases/Bearer_prefix_with_no_token_returns_401 PASS
-=== RUN   Test_NewAuthMiddleware_Cases/only_Bearer_word_returns_401         PASS
-=== RUN   Test_NewAuthMiddleware_Cases/case_sensitive_Bearer_prefix         PASS
---- PASS: Test_NewAuthMiddleware_Cases (0.00s)
-
-=== RUN   Test_NewAuthMiddleware_PassesRequestToNext                  PASS
-=== RUN   Test_NewAuthMiddleware_BlocksRequestFromNext                PASS
-PASS
-ok  github.com/jamesprial/unraid-mcp/internal/auth  0.944s
-```
-
-### internal/safety
-
-```
-=== RUN   Test_AuditLogger_Log_Cases
-=== RUN   Test_AuditLogger_Log_Cases/valid_entry_is_written_successfully  PASS
-=== RUN   Test_AuditLogger_Log_Cases/entry_with_nil_params                PASS
-=== RUN   Test_AuditLogger_Log_Cases/entry_with_empty_tool_name           PASS
---- PASS: Test_AuditLogger_Log_Cases (0.00s)
-
-=== RUN   Test_AuditLogger_Log_Format_JSON                               PASS
-=== RUN   Test_AuditLogger_Log_MultipleEntries                           PASS
-=== RUN   Test_AuditLogger_NilWriter                                     PASS
-=== RUN   Test_NewAuditLogger_NonNilWriter                               PASS
-
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_Cases
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_Cases/destructive_tool_needs_confirmation          PASS
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_Cases/another_destructive_tool_needs_confirmation  PASS
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_Cases/yet_another_destructive_tool_needs_confirmation PASS
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_Cases/non-destructive_tool_does_not_need_confirmation PASS
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_Cases/unknown_tool_does_not_need_confirmation      PASS
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_Cases/empty_tool_name_does_not_need_confirmation   PASS
---- PASS: Test_ConfirmationTracker_NeedsConfirmation_Cases (0.00s)
-
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_EmptyDestructiveList PASS
-=== RUN   Test_ConfirmationTracker_NeedsConfirmation_NilDestructiveList   PASS
-=== RUN   Test_ConfirmationTracker_RequestAndConfirm                      PASS
-=== RUN   Test_ConfirmationTracker_InvalidToken                           PASS
-=== RUN   Test_ConfirmationTracker_EmptyToken                             PASS
-=== RUN   Test_ConfirmationTracker_TokenSingleUse                         PASS
-=== RUN   Test_ConfirmationTracker_MultipleTokensIndependent              PASS
-
-=== RUN   Test_ConfirmationTracker_RequestConfirmation_ReturnsNonEmptyToken
-=== RUN   Test_ConfirmationTracker_RequestConfirmation_ReturnsNonEmptyToken/typical_request    PASS
-=== RUN   Test_ConfirmationTracker_RequestConfirmation_ReturnsNonEmptyToken/empty_resource_name PASS
-=== RUN   Test_ConfirmationTracker_RequestConfirmation_ReturnsNonEmptyToken/empty_description  PASS
---- PASS: Test_ConfirmationTracker_RequestConfirmation_ReturnsNonEmptyToken (0.00s)
-
-=== RUN   Test_ConfirmationTracker_TokenExpiry                            PASS
-=== RUN   Test_ConfirmationTracker_TokenExpiry_Simulation                 PASS
-
-=== RUN   Test_NewConfirmationTracker_ReturnsNonNil
-=== RUN   Test_NewConfirmationTracker_ReturnsNonNil/nil_tools             PASS
-=== RUN   Test_NewConfirmationTracker_ReturnsNonNil/empty_tools           PASS
-=== RUN   Test_NewConfirmationTracker_ReturnsNonNil/with_tools            PASS
---- PASS: Test_NewConfirmationTracker_ReturnsNonNil (0.00s)
-
-=== RUN   Test_Filter_IsAllowed_Cases
-=== RUN   Test_Filter_IsAllowed_Cases/empty_lists_allow_everything                    PASS
-=== RUN   Test_Filter_IsAllowed_Cases/nil_lists_allow_everything                      PASS
-=== RUN   Test_Filter_IsAllowed_Cases/in_allowlist_is_allowed                         PASS
-=== RUN   Test_Filter_IsAllowed_Cases/not_in_allowlist_is_denied                      PASS
-=== RUN   Test_Filter_IsAllowed_Cases/in_denylist_is_denied                           PASS
-=== RUN   Test_Filter_IsAllowed_Cases/denylist_wins_over_allowlist                    PASS
-=== RUN   Test_Filter_IsAllowed_Cases/glob_pattern_in_denylist_matches                PASS
-=== RUN   Test_Filter_IsAllowed_Cases/glob_pattern_in_allowlist_matches               PASS
-=== RUN   Test_Filter_IsAllowed_Cases/glob_pattern_no_match_in_allowlist              PASS
-=== RUN   Test_Filter_IsAllowed_Cases/glob_denylist_takes_priority_over_glob_allowlist PASS
-=== RUN   Test_Filter_IsAllowed_Cases/exact_match_in_denylist_with_glob_allowlist     PASS
-=== RUN   Test_Filter_IsAllowed_Cases/wildcard_allowlist_allows_non-denied            PASS
-=== RUN   Test_Filter_IsAllowed_Cases/empty_resource_name_with_empty_lists            PASS
-=== RUN   Test_Filter_IsAllowed_Cases/empty_resource_name_not_in_allowlist            PASS
---- PASS: Test_Filter_IsAllowed_Cases (0.00s)
-
-=== RUN   Test_NewFilter_ReturnsNonNil
-=== RUN   Test_NewFilter_ReturnsNonNil/both_nil                           PASS
-=== RUN   Test_NewFilter_ReturnsNonNil/both_empty                         PASS
-=== RUN   Test_NewFilter_ReturnsNonNil/populated                          PASS
---- PASS: Test_NewFilter_ReturnsNonNil (0.00s)
-
-PASS
-ok  github.com/jamesprial/unraid-mcp/internal/safety  0.710s
+ok  	github.com/jamesprial/unraid-mcp/internal/graphql	0.499s
 ```
 
 ---
 
-## Step 5 — Race Detection (go test -race)
+## Race Detection
+
+Command: `go test -race -count=1 ./internal/graphql/...`
 
 ```
-ok  github.com/jamesprial/unraid-mcp/internal/config   1.298s
-ok  github.com/jamesprial/unraid-mcp/internal/auth     1.316s
-ok  github.com/jamesprial/unraid-mcp/internal/safety   1.571s
+ok  	github.com/jamesprial/unraid-mcp/internal/graphql	1.328s
 ```
 
-No race conditions detected.
+No races detected. The concurrent request test (`Test_Execute_ConcurrentRequests`) verified safe concurrent use of `HTTPClient` via 10 goroutines.
 
 ---
 
-## Step 6 — Coverage (go test -cover)
+## Static Analysis
 
-```
-ok  github.com/jamesprial/unraid-mcp/internal/config   coverage: 100.0% of statements
-ok  github.com/jamesprial/unraid-mcp/internal/auth     coverage: 100.0% of statements
-ok  github.com/jamesprial/unraid-mcp/internal/safety   coverage:  90.2% of statements
-```
+Command: `go vet ./internal/graphql/...`
 
-### Per-function breakdown (internal/safety — 90.2%)
-
-| File         | Function              | Coverage |
-|--------------|-----------------------|----------|
-| audit.go     | NewAuditLogger        | 100.0%   |
-| audit.go     | Log                   |  75.0%   |
-| confirm.go   | NewConfirmationTracker| 100.0%   |
-| confirm.go   | NeedsConfirmation     | 100.0%   |
-| confirm.go   | RequestConfirmation   | 100.0%   |
-| confirm.go   | Confirm               |  90.9%   |
-| confirm.go   | generateToken         |  75.0%   |
-| filter.go    | NewFilter             | 100.0%   |
-| filter.go    | IsAllowed             | 100.0%   |
-| filter.go    | matchGlob             |  75.0%   |
-
-The 75% functions have uncovered error-handling branches (e.g., `io.Write` failures, `rand.Read` errors, `filepath.Match` errors). These are defensive paths that are difficult to trigger without mocking OS-level primitives. Coverage well exceeds the 70% threshold.
+No output — no warnings. Exit status 0.
 
 ---
 
-## Step 7 — Linter (golangci-lint)
+## Coverage Details
+
+Command: `go test -cover -count=1 ./internal/graphql/...`
 
 ```
-internal/auth/middleware_test.go:13:10: Error return value of `w.Write` is not checked (errcheck)
-    w.Write([]byte("OK"))
-           ^
-1 issues (errcheck)
+ok  	github.com/jamesprial/unraid-mcp/internal/graphql	0.521s	coverage: 94.9% of statements
 ```
 
-**Classification:** Non-critical. This is inside a test helper's `http.ResponseWriter.Write` call where the error is irrelevant to the test assertion. Production code has zero linter findings. This does not affect correctness or safety.
+Coverage: **94.9%** — well above the 70% threshold.
 
 ---
 
-## Issues to Address
+## Full Project Regression Check
 
-None required. The single linter finding is in test scaffolding code (`middleware_test.go:13`) and does not represent a production defect. It can be silenced with `//nolint:errcheck` if desired.
+Command: `go test ./...`
+
+```
+?   	github.com/jamesprial/unraid-mcp/cmd/server	[no test files]
+ok  	github.com/jamesprial/unraid-mcp/internal/auth	(cached)
+ok  	github.com/jamesprial/unraid-mcp/internal/config	0.269s
+ok  	github.com/jamesprial/unraid-mcp/internal/docker	(cached)
+ok  	github.com/jamesprial/unraid-mcp/internal/graphql	0.467s
+ok  	github.com/jamesprial/unraid-mcp/internal/safety	(cached)
+ok  	github.com/jamesprial/unraid-mcp/internal/system	(cached)
+ok  	github.com/jamesprial/unraid-mcp/internal/tools	(cached)
+ok  	github.com/jamesprial/unraid-mcp/internal/vm	(cached)
+```
+
+No regressions in any existing package.
+
+Command: `go vet ./...`
+
+No output — no warnings across the full project. Exit status 0.
+
+---
+
+## Linter Output
+
+Command: `golangci-lint run ./internal/graphql/...`
+
+```
+internal/graphql/client.go:108:23: Error return value of `resp.Body.Close` is not checked (errcheck)
+	defer resp.Body.Close()
+	                     ^
+1 issues:
+* errcheck: 1
+```
+
+**Assessment:** This is a non-critical style warning. `defer resp.Body.Close()` is idiomatic Go for HTTP response cleanup. The `errcheck` lint rule is commonly suppressed for `Close()` in `defer` position because:
+1. There is no meaningful error recovery at that point in the call stack.
+2. The response data has already been read before `Close()` is reached.
+3. This pattern is used in the Go standard library itself.
+
+This warning does NOT affect correctness, safety, or test outcomes. `staticcheck` was not available in the environment.
+
+---
+
+## Pass Criteria Checklist
+
+- [x] All `go test` commands exit with status 0
+- [x] No race conditions detected by `-race`
+- [x] No warnings from `go vet`
+- [x] Coverage meets threshold: **94.9% > 70%**
+- [x] No critical linter errors (one non-critical `errcheck` style note for idiomatic `defer resp.Body.Close()`)
+- [x] No regressions in existing packages (all 8 packages pass)
 
 ---
 
 ## TESTS_PASS
 
-All checks pass. 56 tests passed across 3 packages, 0 failures, no race conditions, no vet warnings, coverage ranges from 90.2% to 100.0% (all above the 70% threshold).
+All checks pass. Coverage 94.9%. No races. No vet warnings. No regressions.
